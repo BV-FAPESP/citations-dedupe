@@ -82,13 +82,13 @@ O script gera os seguintes arquivos na pasta *'grupo_controle/arquivos/dados_sai
 
 --------------------------------------------------------------------------------
 
-# Citações
+### Citações
 
-Se você usa parte do código disponibilizado para um trabalho acadêmico, por favor forneça a seguinte citação:
+Se você utilizar parte do código disponibilizado para um trabalho acadêmico, por favor forneça a seguinte citação:
 
-Grupo de TI da Biblioteca Virtual FAPESP (BV-FAPESP). Correspondência de dados entre o conjunto de dados da BV-FAPESP e artigos científicos. Processo FAPESP n.º 21/14625-9. ULR:......
+Grupo de TI da Biblioteca Virtual FAPESP (BV-FAPESP). Correspondência de dados entre o conjunto de dados da BV-FAPESP e artigos científicos. Processo FAPESP n.º 21/14625-9. ULR: https://bv.fapesp.br
 
-Referências:
+### Referências
 
 [1] Mikhail Yuryevich Bilenko. Learnable Similarity Functions and Their Application to Record Linkage and Clustering. The University of Texas at Austin. Austin, USA. 2006.
 
