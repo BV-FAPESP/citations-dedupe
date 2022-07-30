@@ -17,6 +17,9 @@ A princípio estamos disponibilizando somente o código correspondente ao Grupo 
 - pandas 1.0.0
 
 
+![image](https://user-images.githubusercontent.com/110296380/181920468-aacc0063-81c4-45e0-a8fd-0d897952a00a.png)
+
+
 
 # I. Grupo Controle
 O grupo controle representa o grupo que sera usado para treinar e testar o modelo usado com a biblioteca Python Dedupe.
