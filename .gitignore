@@ -1,6 +1,11 @@
+
+# Arquivos
+grupo_controle/arquivos/dados_treinamento/*
+
 *.swp
 *.txt
 *.TXT
+*.csv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
