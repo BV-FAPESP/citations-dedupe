@@ -31,13 +31,13 @@ A seguir é listada a sequência de arquivos que devem ser executados para obter
 
   Esse script tem duas funcionalidades:
 
-  **a.** Gera uma lista de correlacao entre pesquisadores FAPESP e autores de artigos WoS,
+  **a.** Gera uma lista de correlação entre pesquisadores FAPESP e autores de artigos,
    para o caso de artigos com projeto(s) FAPESP associado(s), e armazena o resultado
    no arquivo:
    *'grupo_controle/arquivos/dados_auxiliares/dados_pesquisador_autoria_com_projeto.csv'*
 
      __NOTA: Se você quiser usar o codigo disponibilizado para conjuntos de dados diferentes,
-            eh necessario disponibilizar esse arquivo com as correlacoes verdadeiras dos seus
+            é necessário disponibilizar este arquivo com as correlações verdadeiras dos seus
             conjuntos de dados.
 
   **b.** Organiza e divide os dados do arquivo *'dados_pesquisador_autoria_com_projeto.csv'*
@@ -46,10 +46,10 @@ A seguir é listada a sequência de arquivos que devem ser executados para obter
 Para executar o script, usar o comando: **'python grupo_controle/gera_dados_para_grupo_controle.py'**
 
 O script gera os seguintes 4 arquivos para trabalhar com o Dedupe, que estarão na pasta *'grupo_controle/arquivos/dados_entrada'*:
-- 'cj_canonico_pesquisadores.csv' (conjunto canonico)
+- 'cj_canonico_pesquisadores.csv' (conjunto canônico)
 - 'cj_messy_autorias_para_treinamento.csv' (conjunto messy para o processo de treinamento)
-- 'cj_messy_autorias_para_validacao.csv' (conjunto messy para o processo de validacao)
-- 'cj_messy_autorias_para_teste.csv' (conjunto messy para a avaliacao do modelo)
+- 'cj_messy_autorias_para_validacao.csv' (conjunto messy para o processo de validação)
+- 'cj_messy_autorias_para_teste.csv' (conjunto messy para a avaliação do modelo)
 
 
 ### 2. grupo_controle/dedupe_gazetteer_grupo_controle.py
@@ -61,17 +61,17 @@ O script gera os seguintes 4 arquivos para trabalhar com o Dedupe, que estarão 
 
 O script gera:
 
-2 arquivos com os dados do treinamento, na pasta *'grupo_controle/arquivos/dados_treinamneto'*:
+2 arquivos com os dados do treinamento, na pasta *'grupo_controle/arquivos/dados_treinamento'*:
    - gazetteer_learned_settings
    - gazetteer_training.json
 
-3 arquivos com os dados de saida da predicao para os dados de teste,*na pasta 'grupo_controle/arquivos/dados_saida'*:
+3 arquivos com os dados de saída da predição para os dados de teste,*na pasta 'grupo_controle/arquivos/dados_saida'*:
    - gazetteer_matches_found.csv
    - gazetteer_false_positives.csv
    - gazetteer_false_negatives.csv
 
 ### 3. simplifica_resultado_dedupe_gazetteer.py
-Diminui o numero de colunas dos arquivos de saida com o script anterior, para ter uma melhor visualizacao dos resultados obtidos.
+Diminui o número de colunas dos arquivos de saída com o script anterior, para ter uma melhor visualização dos resultados obtidos.
 
 Para executar o arquivo, usar o comando: **'python grupo_controle/simplifica_resultado_dedupe_gazetteer.py'**
 
