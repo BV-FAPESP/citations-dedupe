@@ -1,13 +1,13 @@
 # Correspondência de dados usando Dedupe Gazetteer
 
-Depupe é uma biblioteca Python, baseada na tese de doutorado de Mikhail Yuryevich Bilenko [1], que usa \textit{machine learning} para performar rapidamente correspondência nebulosa (fuzzy matching), deduplicação (deduplication) e resolução de entidade~(entity resolution) [2].
+Depupe é uma biblioteca Python, baseada na tese de doutorado de Mikhail Yuryevich Bilenko [1], que usa *machine learning* para performar rapidamente correspondência nebulosa (fuzzy matching), deduplicação (deduplication) e resolução de entidade (entity resolution) [2].
 
 Dedupe fornece a classe chamada Gazetter que lida com o problema de correspondência de dados.
 
 Os arquivos aqui disponiibilizados correspondem a um exemplo de aplicação de correspondência de dados entre o conjunto de
-dados da BV-FAPESP e uma base de artigos científicos como por exemplo Scopus, PubMed, Web of Scienc entre outras .
+dados da BV-FAPESP e uma base de artigos científicos como por exemplo Scopus, PubMed, Web of Science entre outras.
 
-A princípio estamos disponibilizando somente o código correspondente ao Grupo Controle para uma análise do potencial de uso da classe Gazetteer, bem como das suas limitações. Posterioremente será disponibilizado o código para o grupo de aplicação.
+Inicialmente estamos disponibilizando o código correspondente ao Grupo Controle para uma análise do potencial de uso da classe Gazetteer, bem como das suas limitações. Posterioremente será disponibilizado o código para o grupo de aplicação.
 
 
 ## Requisitos
@@ -60,7 +60,7 @@ O script gera os seguintes 4 arquivos para trabalhar com o Dedupe, que estarão 
 **python grupo_controle/dedupe_gazetteer_grupo_controle.py'**
 
 O script gera:
-  
+
 2 arquivos com os dados do treinamento, na pasta *'grupo_controle/arquivos/dados_treinamneto'*:
    - gazetteer_learned_settings
    - gazetteer_training.json
