@@ -86,7 +86,7 @@ O script gera os seguintes arquivos na pasta *'grupo_controle/arquivos/dados_sai
 
 Se você utilizar parte do código disponibilizado para um trabalho acadêmico, por favor forneça a seguinte citação:
 
-Grupo de TI da Biblioteca Virtual FAPESP (BV-FAPESP). Correspondência de dados entre o conjunto de dados da BV-FAPESP e artigos científicos. Processo FAPESP n.º 21/14625-9. ULR: https://bv.fapesp.br
+Grupo de TI da Biblioteca Virtual FAPESP (BV-FAPESP). Correspondência de dados entre o conjunto de dados da BV-FAPESP e artigos científicos. Processo FAPESP n.º 21/14625-9. URL: https://github.com/BV-FAPESP/citations-dedupe
 
 ### Referências
 
