@@ -7,6 +7,12 @@ grupo_controle/arquivos/dados_treinamento/*
 *.TXT
 *.csv
 
+# Pastas a manter
+!grupo_controle/arquivos/dados_auxiliares/.gitkeep
+!grupo_controle/arquivos/dados_entrada/.gitkeep
+!grupo_controle/arquivos/dados_saida/.gitkeep
+!grupo_controle/arquivos/dados_treinamento/.gitkeep
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
