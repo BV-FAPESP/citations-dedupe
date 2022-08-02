@@ -29,13 +29,15 @@ A seguir é listada a sequência de arquivos que devem ser executados para obter
 
 ### 1. grupo_controle/gera_dados_para_grupo_controle.py
 
-    Organiza e divide os dados do arquivo *'true_matches_pesquisador_autoria.csv'*
-    para obter os dados de entrada para o treinamento, predição e teste com o Dedupe.
+Organiza e divide os dados do arquivo *'true_matches_pesquisador_autoria.csv'*
+para obter os dados de entrada para o treinamento, predição e teste com o Dedupe.
 
-    __NOTA: Se você quiser usar o código disponibilizado para conjuntos de dados diferentes, é necessário disponibilizar esse arquivo com as correlações verdadeiras dos seus conjuntos de dados na pasta *'grupo_controle/arquivos/dados_auxiliares'*.
+    __NOTA: Se você quiser usar o código disponibilizado para conjuntos de dados diferentes, 
+    é necessário disponibilizar esse arquivo com as correlações verdadeiras 
+    dos seus conjuntos de dados na pasta 'grupo_controle/arquivos/dados_auxiliares'.
 
 
-    Para executar o script, usar o comando: **'python grupo_controle/gera_dados_para_grupo_controle.py'**
+Para executar o script, usar o comando: **'python grupo_controle/gera_dados_para_grupo_controle.py'**
 
 O script gera os seguintes 4 arquivos para trabalhar com o Dedupe, que estarão na pasta *'grupo_controle/arquivos/dados_entrada'*:
 - 'cj_canonico_pesquisadores.csv' (conjunto canônico)
