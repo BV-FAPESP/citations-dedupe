@@ -21,13 +21,12 @@ import optparse
 import collections
 import dedupe
 
+from dedupe_gazetteer_utils import (readData,
+                                    getTrainingData, getTrueMatchesSet,
+                                    getDiceCoefficient, evaluateMatches,
+                                    readDataToSaveResults)
+
 from datetime import datetime
-from processamentos.machine_learning.dedupe_gazetteer_2.grupo_controle.dedupe_gazetteer_utils import (readData,
-                                                   getTrainingData, getTrueMatchesSet,
-                                                   getDiceCoefficient, evaluateMatches,
-                                                   readDataToSaveResults)
-
-
 
 ################################################################################
 ### Setup
