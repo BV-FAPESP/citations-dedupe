@@ -1,6 +1,6 @@
 
 # Arquivos
-grupo_controle/arquivos/dados_treinamento/*
+arquivos/dados_treinamento/*
 
 *.swp
 *.txt
@@ -8,10 +8,13 @@ grupo_controle/arquivos/dados_treinamento/*
 *.csv
 
 # Pastas a manter
-!grupo_controle/arquivos/dados_auxiliares/.gitkeep
-!grupo_controle/arquivos/dados_entrada/.gitkeep
-!grupo_controle/arquivos/dados_saida/.gitkeep
-!grupo_controle/arquivos/dados_treinamento/.gitkeep
+!arquivos/dados_treinamento/.gitkeep
+!arquivos/grupo_controle/dados_auxiliares/.gitkeep
+!arquivos/grupo_controle/dados_entrada/.gitkeep
+!arquivos/grupo_controle/dados_saida/.gitkeep
+!arquivos/grupo_aplicacao/dados_auxiliares/.gitkeep
+!arquivos/grupo_aplicacao/dados_entrada/.gitkeep
+!arquivos/grupo_aplicacao/dados_saida/.gitkeep
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

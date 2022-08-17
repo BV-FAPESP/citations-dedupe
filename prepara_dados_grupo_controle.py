@@ -1,13 +1,68 @@
+# -*- coding: utf-8 -*-
 
-import os, random, csv
+"""
+This script generates the following four CSV files for
+the tests with Dedupe and the control group:
+- 'cj_canonico_pesquisadores.csv'
+- 'cj_messy_autorias_para_treinamento.csv'
+- 'cj_messy_autorias_para_validacao.csv'
+- 'cj_messy_autorias_para_teste.csv'
 
+NOTE: If you want to use our code with another dataset,
+      you will need to provide
+      the file containing the true matches for your dataset (correlacao_file).
+      In our case, this file contains the following fields:
+      art_id|pesq_id|pesq_nome|pesq_inst_sede|autor_id|autor_nome|autor_inst
+      - art_id: Article id
+      - pesq_id: Researcher id
+      - pesq_nome: Researcher name
+      - pesq_inst_sede: The institution that the researcher is affiliated
+      - autor_id: Article author id
+      - autor_nome: Article author-name
+      - autor_inst: The institution that the article author is affiliated
+"""
+
+import os, sys
+#from os import path
+#sys.path.append(path.join(path.dirname(__file__), '..'))
+
+
+import random, csv
 from generic_utils import (getLongFirstName, getLastName, getPartialAbbreviation,
                             countRows, csvDictWriter, csvDictReaderGenerator)
 
+from datetime import datetime
 
-class AutoriasComProjeto:
+
+######################################################################
+ARQUIVOS_DIR = os.path.join(os.path.dirname(__file__),'arquivos','grupo_controle')
+ARQUIVOS_AUX_DIR = os.path.join(ARQUIVOS_DIR,'dados_auxiliares')
+ARQUIVOS_ENTRADA_DIR = os.path.join(ARQUIVOS_DIR,'dados_entrada')
+
+## Input file
+# Contains true matches between FAPESP researcher set and WoS author set
+correlacao_file =  os.path.join(ARQUIVOS_AUX_DIR,'true_matches_pesquisador_autoria.csv')
+
+## Auxiliary data output files
+# File with authors' data
+autorias_file = os.path.join(ARQUIVOS_AUX_DIR,'cj_messy_autorias_completo.csv')
+
+## Output files. The data inside are the input data to work with Dedupe
+# Data file of FAPESP researchers
+unique_researcher_file = os.path.join(ARQUIVOS_ENTRADA_DIR,'cj_canonico_pesquisadores.csv')
+# Data file for training
+training_file = os.path.join(ARQUIVOS_ENTRADA_DIR,'cj_messy_autorias_para_treinamento.csv')
+# Data file for validation to avoid the problem of overfitting in the training process
+validation_file = os.path.join(ARQUIVOS_ENTRADA_DIR,'cj_messy_autorias_para_validacao.csv')
+# Data file for test the accuracy of the model used with Dedupe
+test_file = os.path.join(ARQUIVOS_ENTRADA_DIR,'cj_messy_autorias_para_teste.csv')
+
+######################################################################
+
+class InputDataDedupeCG:
     """
     Class used to prepare input data for working with Dedupe
+    and the group of control (GC)
     """
 
     # Percent distribution to split the messy dataset
@@ -134,3 +189,25 @@ class AutoriasComProjeto:
         test_data = [row for row in remaining_data if row not in validation_data]
         print(f'Number of samples for Test: {len(test_data)} \n')
         csvDictWriter(self.test_file, fieldnames, test_data)
+
+
+
+
+
+
+if __name__ == '__main__':
+
+
+    start_time = 0
+    end_time = 0
+
+
+    if not os.path.exists(correlacao_file):
+        print(f'The file {correlacao_file} does not exist')
+    else:
+        print('Getting data for training, validation and testing with Dedupe...')
+        start_time = datetime.now()
+        cj_messy_autorias = InputDataDedupeCG(unique_researcher_file, autorias_file, training_file, validation_file,test_file)
+        cj_messy_autorias.splitData(correlacao_file)
+        end_time = datetime.now()
+        print(f"Processing time: {end_time - start_time}")

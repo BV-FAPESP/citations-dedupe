@@ -1,5 +1,5 @@
 """
-The methods in this file will be used in the dedupe_gazetteer_grupo_controle.py file
+The methods in this file will be used in the dedupe_gazetteer.py file
 
 The methods "preProcess" and "readData"
 were obtained from https://github.com/dedupeio/dedupe-examples
