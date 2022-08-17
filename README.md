@@ -17,8 +17,8 @@ Inicialmente estamos disponibilizando o código correspondente ao Grupo Controle
 - pandas 1.0.0
 
 
-![image](https://user-images.githubusercontent.com/110296380/181920468-aacc0063-81c4-45e0-a8fd-0d897952a00a.png)
 
+![image](https://user-images.githubusercontent.com/39598447/184633475-96410b85-db98-47ee-9919-8675e4f602ec.png)
 
 
 # I. Grupo Controle
