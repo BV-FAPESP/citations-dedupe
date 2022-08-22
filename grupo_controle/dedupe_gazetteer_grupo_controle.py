@@ -16,10 +16,14 @@ Note: If you want to train from scratch, delete the settings_file and the traini
 """
 
 import os, sys, csv
+import pdb
 import logging
 import optparse
 import collections
 import dedupe
+
+import abc
+from abc import ABC, abstractmethod
 
 from dedupe_gazetteer_utils import (readData,
                                     getTrainingData, getTrueMatchesSet,
@@ -51,13 +55,12 @@ false_negatives_file = os.path.join(ARQUIVOS_SAIDA_DIR,'gazetteer_false_negative
 
 ################################################################################
 
-class Gazetteer_EntityMatching:
-
+class TrainingProcess:
     def __init__(self, canonical_set_file, settings_file,training_file):
         self.settings_file = settings_file
         self.training_file = training_file
         self.canonical_file = canonical_set_file
-        self.messy_test_file = ''
+        # self.messy_test_file = ''
         self.canonical_d = readData(canonical_set_file)
         self.messy_test_d = {}
         self.found_matches_s = set()
@@ -80,8 +83,7 @@ class Gazetteer_EntityMatching:
 
         return variables
 
-    def trainingProcess(self, messy_training_set_file, messy_validation_set_file, sample_size = 1000):
-
+    def training(self, messy_training_set_file, messy_validation_set_file, sample_size = 1000):
         # Reading data
         messy_training_d = readData(messy_training_set_file)
         labeled_pair_groups_list = getTrainingData(messy_d=messy_training_d, canonical_d=self.canonical_d,  sample_size=sample_size)
@@ -179,22 +181,154 @@ class Gazetteer_EntityMatching:
         print('=================================================================')
 
 
-    ### Classication or Bloking Process
-    def predictionProcess(self, messy_test_set_file, output_file):
 
-        print('\n[PREDICTION PROCESS]')
+class ModelEvaluation():
+    """ Model Evaluation """
 
-        self.messy_test_file = messy_test_set_file
-        print('Importing messy test data ...')
-        self.messy_test_d = readData(self.messy_test_file)
-        print(f"Number of records from messy data for test (autorias): {len(self.messy_test_d)}")
+    # usar classe abstrata com metodos concretos  para o prediction process. IPredict
+    # implementar duas classes concretas: PredictForProduction e TestTraining
+    # TestForTraining compoem com Model Evaluation e SimularErros
 
+    def __init__(self, canonical_file, messy_test_file, false_positives_file, false_negatives_file):
+        self.canonical_file = pesquisadores_file
+        self.messy_test_file = autorias_teste_file
+
+        self.false_positives_file = false_positives_file
+        self.false_negatives_file = false_negatives_file
+
+        self.canonical_d = None
+        self.messy_test_d = None
+        self.found_matches_s = None
+        self.cluster_membership = None
+        self.messy_matches = None
+
+
+    def true_matches(self):
+        n_messy_test = len(self.messy_test_d)
+        n_canonical = len(self.canonical_d)
+
+        ### True matches set
+        true_matches_s = getTrueMatchesSet(canonical_d=self.canonical_d, messy_d=self.messy_test_d)
+        evaluateMatches(found_matches=self.found_matches_s, true_matches=true_matches_s, n_messy_test=n_messy_test, n_canonical=n_canonical)
+
+        true_positives_s = self.found_matches_s.intersection(true_matches_s)
+        self.false_positives_s = self.found_matches_s.difference(true_positives_s)
+        self.false_negatives_s = true_matches_s.difference(self.found_matches_s)
+
+
+
+    def save_false_positives(self):
+        ### salvando informacao obtida da clusterizacao
+
+        canon_file = self.canonical_file
+        messy_file = self.messy_test_file
+
+        canonical_d = readDataToSaveResults(canon_file) #self.canonical_d
+        messy_test_d = readDataToSaveResults(messy_file) #self.messy_test_d
+
+        messy_matches = self.messy_matches
+        cluster_membership = self.cluster_membership
+
+
+        false_positives_d = collections.defaultdict(list)
+        for (record_id_1, record_id_2) in self.false_positives_s:
+            canon_record_id = record_id_1 if canon_file in record_id_1 else record_id_2
+            if canon_record_id not in false_positives_d.keys():
+                false_positives_d[canon_record_id] = []
+
+        for (record_id_1, record_id_2) in self.false_positives_s:
+            messy_record_id = record_id_1 if messy_file in record_id_1 else record_id_2
+            canon_record_id = record_id_1 if canon_file in record_id_1 else record_id_2
+            false_positives_d[canon_record_id].append(messy_record_id)
+
+
+        # obtendo cabeçalho original
+        with open(canon_file, newline='') as csvfile:
+            reader = csv.DictReader(csvfile, delimiter='|')
+            headers = reader.fieldnames
+
+
+        # salvando falsos positivos
+        with open(self.false_positives_file, 'w') as f_output:
+            fieldnames = ['cluster_id','link_score','source_file', 'record_id'] + headers
+            writer = csv.DictWriter(f_output, delimiter='|', fieldnames=fieldnames)
+            writer.writeheader() # save the new fieldnames
+
+            # Salvando:
+            # - entidades do conjunto canonico, cuja correspondencia foi encontrada incorretamente
+            # - entidades do conjunto messy, cuja correspondencia foi encontrada incorretamente
+            for canon_record_id, messy_record_ids in list(false_positives_d.items()):
+                cluster_id =  cluster_membership[canon_record_id]
+                canon_record_row = canonical_d[canon_record_id].copy()
+                cluster_details = {'cluster_id':cluster_id, 'link_score':None, 'source_file':canon_file, 'record_id':canon_record_id}
+                canon_record_row.update(cluster_details)
+                writer.writerow(canon_record_row)
+                for messy_record_id in messy_record_ids:
+                    score = messy_matches[messy_record_id][canon_record_id]
+                    messy_record_row = messy_test_d[messy_record_id].copy()
+                    cluster_details = {'cluster_id':cluster_id, 'link_score':score, 'source_file':messy_file, 'record_id':messy_record_id}
+                    messy_record_row.update(cluster_details)
+                    writer.writerow(messy_record_row)
+
+    def save_false_negatives(self):
+        ### salvando informacao obtida da clusterizacao
+
+        canon_file = self.canonical_file
+        messy_file = self.messy_test_file
+
+        canonical_d = readDataToSaveResults(canon_file) #self.canonical_d
+        messy_test_d = readDataToSaveResults(messy_file) #self.messy_test_d
+
+
+        false_negatives_d = collections.defaultdict(list)
+        for (record_id_1, record_id_2) in self.false_negatives_s:
+            canon_record_id = record_id_1 if canon_file in record_id_1 else record_id_2
+            if canon_record_id not in false_negatives_d.keys():
+                false_negatives_d[canon_record_id] = []
+
+        for (record_id_1, record_id_2) in self.false_negatives_s:
+            messy_record_id = record_id_1 if messy_file in record_id_1 else record_id_2
+            canon_record_id = record_id_1 if canon_file in record_id_1 else record_id_2
+            false_negatives_d[canon_record_id].append(messy_record_id)
+
+        # obtendo cabeçalho original
+        with open(canon_file, newline='') as csvfile:
+            reader = csv.DictReader(csvfile, delimiter='|')
+            headers = reader.fieldnames
+
+        # salvando falsos negativos
+        with open(self.false_negatives_file, 'w') as f_output:
+            fieldnames = ['cluster_id','link_score','source_file', 'record_id'] + headers
+            writer = csv.DictWriter(f_output, delimiter='|', fieldnames=fieldnames)
+            writer.writeheader() # save the new fieldnames
+
+            # Salvando:
+            # - entidades do conjunto canonico, cuja correspondencia nao foi encontrada
+            # - entidades do conjunto messy, cuja correspondencia nao foi encontrada
+            for canon_record_id, messy_record_ids in list(false_negatives_d.items()):
+                canon_record_row = canonical_d[canon_record_id].copy()
+                cluster_details = {'cluster_id':None, 'link_score':None,
+                                   'source_file':canon_file, 'record_id':canon_record_id}
+                canon_record_row.update(cluster_details)
+                writer.writerow(canon_record_row)
+                for messy_record_id in messy_record_ids:
+                    messy_record_row = messy_test_d[messy_record_id].copy()
+                    cluster_details = { 'cluster_id':None, 'link_score':None,
+                                        'source_file': messy_file,'record_id': messy_record_id}
+                    messy_record_row.update(cluster_details)
+                    writer.writerow(messy_record_row)
+
+
+class IPredict(ABC):
+    @abstractmethod
+    def __init__():
+        raise NotImplementedError()
+
+    def cluster_data(self):
+        print('Clustering new data...')
         print('Reading from', self.settings_file)
         with open(settings_file, 'rb') as sf:
             gazetteer = dedupe.StaticGazetteer(sf)
-
-        print('Clustering new data...')
-
         gazetteer.index(self.canonical_d)
 
         results = gazetteer.search(self.messy_test_d, threshold=0.5, n_matches=1, generator=True)
@@ -227,39 +361,50 @@ class Gazetteer_EntityMatching:
         self.found_matches_s = found_matches_s
         self.messy_matches = messy_matches
         self.cluster_membership = cluster_membership
+        self.save_prediction_result(self.output_file)
 
-        self.save_prediction_result(output_file)
 
 
-    ### Model Evaluation
-    def modelEvaluation(self,false_positives_file,false_negatives_file):
+class ProductionPredict(IPredict):
+    """ Classication or Bloking Process """
 
-        print('\n[MODEL EVALUATION]')
+    def __init__(self, canonical_set_file, settings_file, messy_test_set_file):
+        print('\n[PREDICTION PROCESS]')
+        self.messy_test_file = messy_test_set_file
+        self.output_file = output_file
 
-        canonical_d = self.canonical_d
-        messy_test_d = self.messy_test_d
+        print('Importing messy test data ...')
+        self.messy_test_d = readData(messy_test_set_file)
+        print(f"Number of records from messy data for test (autorias): {len(self.messy_test_d)}")
 
-        found_matches_s = self.found_matches_s
+        print('Reading from', settings_file)
+        self.settings_file = settings_file
 
-        ### True matches set
-        true_matches_s = getTrueMatchesSet(canonical_d=canonical_d, messy_d=messy_test_d)
+        self.canonical_file = canonical_set_file
+        self.canonical_d = readData(canonical_set_file)
 
-        n_messy_test = len(messy_test_d)
-        n_canonical = len(canonical_d)
 
-        evaluateMatches(found_matches=found_matches_s, true_matches=true_matches_s, n_messy_test=n_messy_test, n_canonical=n_canonical)
+class TrainingTest(IPredict):
+    def __init__(self, canonical_set_file, settings_file, messy_test_set_file, output_file, model_evaluation:ModelEvaluation):
+        print('\n[PREDICTION PROCESS]')
+        self.messy_test_file = messy_test_set_file
+        self.output_file = output_file
 
-        true_positives_s = found_matches_s.intersection(true_matches_s)
-        false_positives_s = found_matches_s.difference(true_positives_s)
-        false_negatives_s = true_matches_s.difference(found_matches_s)
+        print('Importing messy test data ...')
+        self.messy_test_d = readData(messy_test_set_file)
+        print(f"Number of records from messy data for test (autorias): {len(self.messy_test_d)}")
 
-        self.save_false_positives(false_positives_s, false_positives_file)
-        self.save_false_negatives(false_negatives_s, false_negatives_file)
+        print('Reading from', settings_file)
+        self.settings_file = settings_file
+
+        self.canonical_file = canonical_set_file
+        self.canonical_d = readData(canonical_set_file)
+
+        self.model_evaluation = model_evaluation
 
 
     def save_prediction_result(self, output_file):
-        ### salvando informacao obtida da clusterizacao
-
+        """ salvando informacao obtida da clusterizacao """
         canon_file = self.canonical_file
         messy_file = self.messy_test_file
 
@@ -309,109 +454,16 @@ class Gazetteer_EntityMatching:
                     messy_record_row.update(cluster_details)
                     writer.writerow(messy_record_row)
 
+    def evaluate_model(self):
+        self.model_evaluation.canonical_d = self.canonical_d
+        self.model_evaluation.messy_test_d = self.messy_test_d
+        self.model_evaluation.found_matches_s = self.found_matches_s
+        self.model_evaluation.cluster_membership = self.cluster_membership
+        self.model_evaluation.messy_matches = self.messy_matches
 
-    def save_false_positives(self, false_positives_s, false_positives_file):
-        ### salvando informacao obtida da clusterizacao
-
-        canon_file = self.canonical_file
-        messy_file = self.messy_test_file
-
-        canonical_d = readDataToSaveResults(canon_file) #self.canonical_d
-        messy_test_d = readDataToSaveResults(messy_file) #self.messy_test_d
-
-        messy_matches = self.messy_matches
-        cluster_membership = self.cluster_membership
-
-
-        false_positives_d = collections.defaultdict(list)
-        for (record_id_1, record_id_2) in false_positives_s:
-            canon_record_id = record_id_1 if canon_file in record_id_1 else record_id_2
-            if canon_record_id not in false_positives_d.keys():
-                false_positives_d[canon_record_id] = []
-
-        for (record_id_1, record_id_2) in false_positives_s:
-            messy_record_id = record_id_1 if messy_file in record_id_1 else record_id_2
-            canon_record_id = record_id_1 if canon_file in record_id_1 else record_id_2
-            false_positives_d[canon_record_id].append(messy_record_id)
-
-
-        # obtendo cabeçalho original
-        with open(canon_file, newline='') as csvfile:
-            reader = csv.DictReader(csvfile, delimiter='|')
-            headers = reader.fieldnames
-
-
-        # salvando falsos positivos
-        with open(false_positives_file, 'w') as f_output:
-            fieldnames = ['cluster_id','link_score','source_file', 'record_id'] + headers
-            writer = csv.DictWriter(f_output, delimiter='|', fieldnames=fieldnames)
-            writer.writeheader() # save the new fieldnames
-
-            # Salvando:
-            # - entidades do conjunto canonico, cuja correspondencia foi encontrada incorretamente
-            # - entidades do conjunto messy, cuja correspondencia foi encontrada incorretamente
-            for canon_record_id, messy_record_ids in list(false_positives_d.items()):
-                cluster_id =  cluster_membership[canon_record_id]
-                canon_record_row = canonical_d[canon_record_id].copy()
-                cluster_details = {'cluster_id':cluster_id, 'link_score':None, 'source_file':canon_file, 'record_id':canon_record_id}
-                canon_record_row.update(cluster_details)
-                writer.writerow(canon_record_row)
-                for messy_record_id in messy_record_ids:
-                    score = messy_matches[messy_record_id][canon_record_id]
-                    messy_record_row = messy_test_d[messy_record_id].copy()
-                    cluster_details = {'cluster_id':cluster_id, 'link_score':score, 'source_file':messy_file, 'record_id':messy_record_id}
-                    messy_record_row.update(cluster_details)
-                    writer.writerow(messy_record_row)
-
-    def save_false_negatives(self, false_negatives_s,false_negatives_file):
-        ### salvando informacao obtida da clusterizacao
-
-        canon_file = self.canonical_file
-        messy_file = self.messy_test_file
-
-        canonical_d = readDataToSaveResults(canon_file) #self.canonical_d
-        messy_test_d = readDataToSaveResults(messy_file) #self.messy_test_d
-
-
-        false_negatives_d = collections.defaultdict(list)
-        for (record_id_1, record_id_2) in false_negatives_s:
-            canon_record_id = record_id_1 if canon_file in record_id_1 else record_id_2
-            if canon_record_id not in false_negatives_d.keys():
-                false_negatives_d[canon_record_id] = []
-
-        for (record_id_1, record_id_2) in false_negatives_s:
-            messy_record_id = record_id_1 if messy_file in record_id_1 else record_id_2
-            canon_record_id = record_id_1 if canon_file in record_id_1 else record_id_2
-            false_negatives_d[canon_record_id].append(messy_record_id)
-
-        # obtendo cabeçalho original
-        with open(canon_file, newline='') as csvfile:
-            reader = csv.DictReader(csvfile, delimiter='|')
-            headers = reader.fieldnames
-
-        # salvando falsos negativos
-        with open(false_negatives_file, 'w') as f_output:
-            fieldnames = ['cluster_id','link_score','source_file', 'record_id'] + headers
-            writer = csv.DictWriter(f_output, delimiter='|', fieldnames=fieldnames)
-            writer.writeheader() # save the new fieldnames
-
-            # Salvando:
-            # - entidades do conjunto canonico, cuja correspondencia nao foi encontrada
-            # - entidades do conjunto messy, cuja correspondencia nao foi encontrada
-            for canon_record_id, messy_record_ids in list(false_negatives_d.items()):
-                canon_record_row = canonical_d[canon_record_id].copy()
-                cluster_details = {'cluster_id':None, 'link_score':None,
-                                   'source_file':canon_file, 'record_id':canon_record_id}
-                canon_record_row.update(cluster_details)
-                writer.writerow(canon_record_row)
-                for messy_record_id in messy_record_ids:
-                    messy_record_row = messy_test_d[messy_record_id].copy()
-                    cluster_details = { 'cluster_id':None, 'link_score':None,
-                                        'source_file': messy_file,'record_id': messy_record_id}
-                    messy_record_row.update(cluster_details)
-                    writer.writerow(messy_record_row)
-
-
+        self.model_evaluation.true_matches()
+        self.model_evaluation.save_false_positives()
+        self.model_evaluation.save_false_negatives()
 
 
 if __name__ == '__main__':
@@ -435,16 +487,15 @@ if __name__ == '__main__':
             log_level = logging.DEBUG
     logging.getLogger().setLevel(log_level)
 
-    ###
 
-
-    start_time = 0
+    start_time = datetime.now()
     step_time = 0
     end_time = 0
 
-    start_time = datetime.now()
-    entity_matching = Gazetteer_EntityMatching(pesquisadores_file, settings_file, training_file)
-    print(f"Number of records from canonical data (pesquisadores unicos): {len(entity_matching.canonical_d)}")
+
+    ### Training
+    tp = TrainingProcess(pesquisadores_file, settings_file, training_file)
+    print(f"Number of records from canonical data (pesquisadores unicos): {len(tp.canonical_d)}")
 
     # __Note: If you want to train from scratch, delete the settings_file and the training_file
     if not os.path.exists(settings_file):
@@ -452,21 +503,23 @@ if __name__ == '__main__':
         # sample_size: number of positive matches to be considered for each iteration in the training process
         sample_size = 1000
         step_time = datetime.now()
-        entity_matching.trainingProcess(autorias_treinamento_file, autorias_validacao_file, sample_size)
+        tp.training(autorias_treinamento_file, autorias_validacao_file, sample_size = 1000)
         end_time = datetime.now()
         print(f"Training Time: {end_time - step_time} \n")
-        ###
+    ###
 
     ### Prediction
     step_time = datetime.now()
-    entity_matching.predictionProcess(autorias_teste_file, output_file)
+    model_evaluation = ModelEvaluation(pesquisadores_file, autorias_teste_file, false_positives_file, false_negatives_file)
+    tt = TrainingTest(pesquisadores_file, settings_file, autorias_teste_file, output_file, model_evaluation)
+    tt.cluster_data()
     end_time = datetime.now()
     print(f"Prediction Time and File Recording Time: {end_time - step_time} \n")
     ###
 
     ### Performance of the algorithm
     step_time = datetime.now()
-    entity_matching.modelEvaluation(false_positives_file, false_negatives_file)
+    tt.evaluate_model()
     end_time = datetime.now()
     print(f"Model Evaluation Time and Files Recording Time: {end_time - step_time} \n")
     ###

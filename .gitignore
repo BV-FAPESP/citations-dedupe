@@ -6,6 +6,7 @@ grupo_controle/arquivos/dados_treinamento/*
 *.txt
 *.TXT
 *.csv
+*.~lock.*
 
 # Pastas a manter
 !grupo_controle/arquivos/dados_auxiliares/.gitkeep
