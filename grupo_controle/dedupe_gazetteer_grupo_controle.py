@@ -492,7 +492,7 @@ if __name__ == '__main__':
     step_time = 0
     end_time = 0
 
-    """
+
     ### Training
     tp = TrainingProcess(pesquisadores_file, settings_file, training_file)
     print(f"Number of records from canonical data (pesquisadores unicos): {len(tp.canonical_d)}")
@@ -506,7 +506,7 @@ if __name__ == '__main__':
         tp.training(autorias_treinamento_file, autorias_validacao_file, sample_size = 1000)
         end_time = datetime.now()
         print(f"Training Time: {end_time - step_time} \n")
-    """
+    ###
 
     ### Prediction
     step_time = datetime.now()
