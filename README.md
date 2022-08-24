@@ -73,6 +73,13 @@ O script gera os seguintes arquivos na pasta *'grupo_controle/arquivos/dados_sai
 - gazetteer_false_positives_simplified.csv
 - gazetteer_false_negatives_simplified.csv
 
+
+# Classes
+
+
+![image](https://user-images.githubusercontent.com/39598447/185955314-24696885-0413-4b17-b96f-829b97c49a77.png)
+
+
 --------------------------------------------------------------------------------
 
 ### Citações
