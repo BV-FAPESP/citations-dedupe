@@ -15,7 +15,8 @@ Note: If you want to train from scratch, delete the settings_file and the traini
 
 """
 
-import os, sys, csv
+import os, sys, csv, copy
+from random import sample
 import pdb
 import logging
 import optparse
@@ -55,33 +56,81 @@ false_negatives_file = os.path.join(ARQUIVOS_SAIDA_DIR,'gazetteer_false_negative
 
 ################################################################################
 
+
+class TrainingElement:
+
+    ### Variables Definition
+    # Define the fields the gazetteer will pay attention to, by creating
+    # a list of dictionaries describing the variables will be used for training a model.
+    # Note that a variable definition describes the records that you want to match, and
+    # it is a dictionary where the keys are the fields and the values are the field specification.
+    VARIABLES = [
+                    {'field': 'nome', 'type': 'String'},
+                    {'field': 'nome', 'type': 'Text'},
+                    {'field': 'primeiro_nome', 'type':'Exact', 'has missing': True},
+                    {'field': 'abr', 'type':'ShortString'},
+                    {'field': 'ult_sobrenome', 'type': 'Exact'}
+                ]
+
+    def __init__(self, messy_validation_d, training_file):
+        self.gazetteer = dedupe.Gazetteer(self.VARIABLES)
+        self.messy_validation_d = messy_validation_d
+        self.training_file = training_file
+        self.performance = None
+
+    def prepare_training(self, labeled_messy_d, labeled_canonical_d, training_file=None, sample_size=None):
+        self.labeled_messy_d = labeled_messy_d
+        self.labeled_canonical_d = labeled_canonical_d
+        if training_file:
+            self.gazetteer.prepare_training(self.labeled_messy_d, self.labeled_canonical_d, training_file=training_file)
+        elif sample_size:
+            self.gazetteer.prepare_training(self.labeled_messy_d, self.labeled_canonical_d, sample_size=sample_size)
+
+    def active_labeling(self):
+        print('Starting Active Labeling...')
+        n_distinct_pairs = len(self.labeled_messy_d)
+        labeled_pairs = dedupe.training_data_link(self.labeled_messy_d, self.labeled_canonical_d,'link_id',training_size=n_distinct_pairs)
+        self.gazetteer.mark_pairs(labeled_pairs)
+        self.gazetteer.train()
+
+    def training_file_exists(self):
+        try:
+            return open(self.training_file)
+        except IOError:
+            raise
+
+    def write_training(self):
+        # When finished, save the training away to disk
+        # Write a JSON file that contains labeled examples (pairs)
+        with open(self.training_file, 'w') as tf:
+            self.gazetteer.write_training(tf)
+
+    def training_performance(self, value):
+        self.performance = value
+
+    def __ge__(self, other):
+        return self.performance >= other.performance
+
+    def __str__(self):
+        return str(round(self.performance, 4))
+
+
+
+
+
 class TrainingProcess:
     def __init__(self, canonical_set_file, settings_file,training_file):
         self.settings_file = settings_file
         self.training_file = training_file
         self.canonical_file = canonical_set_file
-        # self.messy_test_file = ''
         self.canonical_d = readData(canonical_set_file)
-        self.messy_test_d = {}
-        self.found_matches_s = set()
-        self.messy_matches = {}
-        self.cluster_membership = {}
 
-    def define_variables(self):
-        ### Variables Definition
-        # Define the fields the gazetteer will pay attention to, by creating
-        # a list of dictionaries describing the variables will be used for training a model.
-        # Note that a variable definition describes the records that you want to match, and
-        # it is a dictionary where the keys are the fields and the values are the field specification.
-        variables = [
-                      {'field': 'nome', 'type': 'String'},
-                      {'field': 'nome', 'type': 'Text'},
-                      {'field': 'primeiro_nome', 'type':'Exact', 'has missing': True},
-                      {'field': 'abr', 'type':'ShortString'},
-                      {'field': 'ult_sobrenome', 'type': 'Exact'}
-                    ]
-
-        return variables
+        # Always remove settings and training files on __init__
+        try:
+            os.unlink(self.settings_file)
+            os.unlink(self.training_file)
+        except FileNotFoundError:
+            pass
 
     def training(self, messy_training_set_file, messy_validation_set_file, sample_size = 1000):
         # Reading data
@@ -92,12 +141,7 @@ class TrainingProcess:
         print(f"Number of labeled pair groups: {len(labeled_pair_groups_list)}")
 
         print("\n[TRAINING PROCESS]")
-        # Define the fields the gazetteer will pay attention to
-        variables = self.define_variables()
-
-        ### Create a new gazetteer object and pass our data model to it.
-        gazetteer = dedupe.Gazetteer(variables)
-        tmp_gazetteer = dedupe.Gazetteer(variables)
+        training_element = TrainingElement(messy_validation_d, training_file)
 
         i = 0
         stop = False
@@ -108,75 +152,48 @@ class TrainingProcess:
             print(f'Iteration: {i}')
             (labeled_messy_d,labeled_canonical_d) = labeled_pair_groups_list[i]
 
+
             if i == 0:
-                # If we have training data saved from a previous run of gazetteer,
-                # look for it an load it in.
-                # __Note:__ if you want to train from scratch, delete the training_file
-                if os.path.exists(self.training_file):
-                    print('Reading labeled examples from ', self.training_file)
-                    with open(self.training_file) as tf:
-                        gazetteer.prepare_training(labeled_messy_d, labeled_canonical_d, training_file=tf)
-                else:
-                    gazetteer.prepare_training(labeled_messy_d, labeled_canonical_d, sample_size=150000) #, blocked_proportion=0.5)
+                training_element.prepare_training(labeled_messy_d, labeled_canonical_d, sample_size=150000)
+                training_element.active_labeling()
+                training_element.write_training()
 
-                print('Starting Active Labeling...')
-                n_distinct_pairs = len(labeled_messy_d)
-                labeled_pairs = dedupe.training_data_link(labeled_messy_d, labeled_canonical_d,'link_id',training_size=n_distinct_pairs)
-                gazetteer.mark_pairs(labeled_pairs)
-
-                gazetteer.train()
-
-                # When finished, save the training away to disk
-                with open(self.training_file, 'w') as tf:
-                    gazetteer.write_training(tf)  # Write a JSON file that contains labeled examples (pairs)
-                # Computing the Dice coeficient
-                dc = getDiceCoefficient(gazetteer_obj=gazetteer, canonical_d=self.canonical_d, validation_d=messy_validation_d)
-                print(f'[Validation] Dice Coefient: {round(dc,4)}')
-
+                dc = getDiceCoefficient(gazetteer_obj=training_element.gazetteer, canonical_d=self.canonical_d, validation_d=messy_validation_d)
+                training_element.training_performance(dc)
+                print(f'[Validation] Dice Coefient: {training_element}')
             else:
-                print('Reading labeled examples from ', self.training_file)
-                with open(self.training_file) as tf:
-                    tmp_gazetteer.prepare_training(labeled_messy_d, labeled_canonical_d, training_file=tf)
-
-                print('Starting Active Labeling...')
-                n_distinct_pairs = len(labeled_messy_d)
-                labeled_pairs = dedupe.training_data_link(labeled_messy_d, labeled_canonical_d,'link_id',training_size=n_distinct_pairs)
+                try:
+                    tf = training_element.training_file_exists()
+                    print('Reading labeled examples from ', self.training_file)
+                    training_element.prepare_training(labeled_messy_d, labeled_canonical_d, training_file=tf)
+                    training_element.active_labeling()
+                except IOError:
+                    raise
 
                 try:
-                    tmp_gazetteer.mark_pairs(labeled_pairs)
-                    tmp_gazetteer.train()
+                    dc = getDiceCoefficient(gazetteer_obj=training_element.gazetteer, canonical_d=self.canonical_d, validation_d=messy_validation_d)
+                    training_element.training_performance(dc)
 
-                    new_dc = getDiceCoefficient(gazetteer_obj=tmp_gazetteer, canonical_d=self.canonical_d, validation_d=messy_validation_d)
-
-                    if new_dc < dc:
-                        stop = True
-                        print(f'[Validation] Dice Coefient (old): {round(dc,4)}')
-                        print(f'[Validation] Dice Coefient (new): {round(new_dc,4)}')
-                        print('Stopping...')
+                    if training_element >= former_training_element:
+                        print(f'[Validation] Dice Coefient (new): {training_element}')
+                        training_element.write_training()
                     else:
-                        print(f'[Validation] Dice Coefient (new): {round(new_dc,4)}')
-                        with open(self.training_file, 'w') as tf:
-                            tmp_gazetteer.write_training(tf)  # Write a JSON file that contains labeled examples (pairs)
-
-                        gazetteer.cleanup_training()
-                        gazetteer = tmp_gazetteer
-                        tmp_gazetteer = dedupe.Gazetteer(variables)
-                        dc = new_dc
-                except:
-                    print("An exception occurred")
-                    stop = True
-                    pass
-
+                        stop = True
+                        print(f'[Validation] Dice Coefient (old): {former_training_element}')
+                        print(f'[Validation] Dice Coefient (new): {training_element}')
+                        print('Stopping...')
+                except Exception as e:
+                    raise
 
             i += 1
+            former_training_element = copy.deepcopy(training_element)
 
         ### Save the weights and predicates to disk.
         with open(self.settings_file, 'wb') as sf:
-            gazetteer.write_settings(sf) # Write a settings file containing the data model and predicates.
+            training_element.gazetteer.write_settings(sf) # Write a settings file containing the data model and predicates.
 
         ### Clean up data we used for training. Free up memory.
-        gazetteer.cleanup_training()
-        tmp_gazetteer.cleanup_training()
+        training_element.gazetteer.cleanup_training()
 
         print('=================================================================')
 
@@ -494,19 +511,20 @@ if __name__ == '__main__':
 
 
     ### Training
+    """
+    Skipt training with you have already trained otherwhise it will delete your trained and settings file,
+    and train again.
+    """
     tp = TrainingProcess(pesquisadores_file, settings_file, training_file)
     print(f"Number of records from canonical data (pesquisadores unicos): {len(tp.canonical_d)}")
 
-    # __Note: If you want to train from scratch, delete the settings_file and the training_file
-    if not os.path.exists(settings_file):
-        ### Training
-        # sample_size: number of positive matches to be considered for each iteration in the training process
-        sample_size = 1000
-        step_time = datetime.now()
-        tp.training(autorias_treinamento_file, autorias_validacao_file, sample_size = 1000)
-        end_time = datetime.now()
-        print(f"Training Time: {end_time - step_time} \n")
+    sample_size = 1000
+    step_time = datetime.now()
+    tp.training(autorias_treinamento_file, autorias_validacao_file, sample_size = 1000)
+    end_time = datetime.now()
+    print(f"Training Time: {end_time - step_time} \n")
     ###
+
 
     ### Prediction
     step_time = datetime.now()
@@ -524,4 +542,4 @@ if __name__ == '__main__':
     print(f"Model Evaluation Time and Files Recording Time: {end_time - step_time} \n")
     ###
 
-    print(f'Total Processing Time: {end_time - start_time}')
+    # print(f'Total Processing Time: {end_time - start_time}')
