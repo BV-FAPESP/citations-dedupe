@@ -108,9 +108,11 @@ class TrainingElement:
     def training_performance(self, value):
         self.performance = value
 
-    def __gt__(self, other):
-        return (self.performance > other.performance)
+    def __ge__(self, other):
+        return self.performance >= other.performance
 
+    def __str__(self):
+        return str(round(self.performance, 4))
 
 
 
@@ -123,6 +125,12 @@ class TrainingProcess:
         self.canonical_file = canonical_set_file
         self.canonical_d = readData(canonical_set_file)
 
+        # Always remove settings and training files on __init__
+        try:
+            os.unlink(self.settings_file)
+            os.unlink(self.training_file)
+        except FileNotFoundError:
+            pass
 
     def training(self, messy_training_set_file, messy_validation_set_file, sample_size = 1000):
         # Reading data
@@ -152,7 +160,7 @@ class TrainingProcess:
 
                 dc = getDiceCoefficient(gazetteer_obj=training_element.gazetteer, canonical_d=self.canonical_d, validation_d=messy_validation_d)
                 training_element.training_performance(dc)
-                print(f'[Validation] Dice Coefient: {round(dc,4)}')
+                print(f'[Validation] Dice Coefient: {training_element}')
             else:
                 try:
                     tf = training_element.training_file_exists()
@@ -166,22 +174,19 @@ class TrainingProcess:
                     dc = getDiceCoefficient(gazetteer_obj=training_element.gazetteer, canonical_d=self.canonical_d, validation_d=messy_validation_d)
                     training_element.training_performance(dc)
 
-                    if training_element < former_training_element:
-                        stop = True
-                        print(f'[Validation] Dice Coefient (old): {round(dc,4)}')
-                        print(f'[Validation] Dice Coefient (new): {round(dc,4)}')
-                        print('Stopping...')
-                    else:
-                        print(f'[Validation] Dice Coefient (new): {round(dc,4)}')
+                    if training_element >= former_training_element:
+                        print(f'[Validation] Dice Coefient (new): {training_element}')
                         training_element.write_training()
-                except:
-                    print("An exception occurred")
-                    stop = True
-                    pass
+                    else:
+                        stop = True
+                        print(f'[Validation] Dice Coefient (old): {former_training_element}')
+                        print(f'[Validation] Dice Coefient (new): {training_element}')
+                        print('Stopping...')
+                except Exception as e:
+                    raise
+
             i += 1
             former_training_element = copy.deepcopy(training_element)
-
-
 
         ### Save the weights and predicates to disk.
         with open(self.settings_file, 'wb') as sf:
@@ -189,7 +194,6 @@ class TrainingProcess:
 
         ### Clean up data we used for training. Free up memory.
         training_element.gazetteer.cleanup_training()
-        # tmp_gazetteer.cleanup_training()
 
         print('=================================================================')
 
@@ -507,13 +511,13 @@ if __name__ == '__main__':
 
 
     ### Training
+    """
+    Skipt training with you have already trained otherwhise it will delete your trained and settings file,
+    and train again.
+    """
     tp = TrainingProcess(pesquisadores_file, settings_file, training_file)
     print(f"Number of records from canonical data (pesquisadores unicos): {len(tp.canonical_d)}")
 
-    # __Note: If you want to train from scratch, delete the settings_file and the training_file
-    # if not os.path.exists(settings_file):
-        ### Training
-        # sample_size: number of positive matches to be considered for each iteration in the training process
     sample_size = 1000
     step_time = datetime.now()
     tp.training(autorias_treinamento_file, autorias_validacao_file, sample_size = 1000)
@@ -521,7 +525,7 @@ if __name__ == '__main__':
     print(f"Training Time: {end_time - step_time} \n")
     ###
 
-    """
+
     ### Prediction
     step_time = datetime.now()
     model_evaluation = ModelEvaluation(pesquisadores_file, autorias_teste_file, false_positives_file, false_negatives_file)
@@ -537,6 +541,5 @@ if __name__ == '__main__':
     end_time = datetime.now()
     print(f"Model Evaluation Time and Files Recording Time: {end_time - step_time} \n")
     ###
-    """
 
     # print(f'Total Processing Time: {end_time - start_time}')
