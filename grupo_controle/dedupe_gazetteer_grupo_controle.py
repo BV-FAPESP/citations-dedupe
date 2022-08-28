@@ -29,7 +29,7 @@ from abc import ABC, abstractmethod
 from dedupe_gazetteer_utils import (readData,
                                     getTrainingData, getTrueMatchesSet,
                                     getDiceCoefficient, evaluateMatches,
-                                    readDataToSaveResults)
+                                    readDataToSaveResults, chk_file_exists)
 
 from datetime import datetime
 
@@ -93,12 +93,6 @@ class TrainingElement:
         self.gazetteer.mark_pairs(labeled_pairs)
         self.gazetteer.train()
 
-    def training_file_exists(self):
-        try:
-            return open(self.training_file)
-        except IOError:
-            raise
-
     def write_training(self):
         # When finished, save the training away to disk
         # Write a JSON file that contains labeled examples (pairs)
@@ -119,10 +113,10 @@ class TrainingElement:
 
 
 class TrainingProcess:
-    def __init__(self, canonical_set_file, settings_file,training_file):
+    def __init__(self, canonical_file, settings_file,training_file):
         self.settings_file = settings_file
         self.training_file = training_file
-        self.canonical_d = readData(canonical_set_file)
+        self.canonical_d = readData(canonical_file)
 
         # Always remove settings and training files on __init__
         try:
@@ -131,11 +125,11 @@ class TrainingProcess:
         except FileNotFoundError:
             pass
 
-    def training(self, messy_training_set_file, messy_validation_set_file, sample_size = 1000):
+    def training(self, messy_training_file, messy_validation_file, sample_size = 1000):
         # Reading data
-        messy_training_d = readData(messy_training_set_file)
+        messy_training_d = readData(messy_training_file)
         labeled_pair_groups_list = getTrainingData(messy_d=messy_training_d, canonical_d=self.canonical_d,  sample_size=sample_size)
-        messy_validation_d = readData(messy_validation_set_file)
+        messy_validation_d = readData(messy_validation_file)
         print(f"Number of records from messy data for validation (autorias): {len(messy_validation_d)}")
         print(f"Number of labeled pair groups: {len(labeled_pair_groups_list)}")
 
@@ -162,10 +156,10 @@ class TrainingProcess:
                 print(f'[Validation] Dice Coefient: {trained_element}')
             else:
                 try:
-                    tf = trained_element.training_file_exists()
-                    print('Reading labeled examples from ', self.training_file)
-                    trained_element.prepare_training(labeled_messy_d, labeled_canonical_d, training_file=tf)
-                    trained_element.active_labeling()
+                    with open(self.training_file) as tf:
+                        print('Reading labeled examples from ', self.training_file)
+                        trained_element.prepare_training(labeled_messy_d, labeled_canonical_d, training_file=tf)
+                        trained_element.active_labeling()
                 except IOError:
                     raise
 
@@ -192,7 +186,7 @@ class TrainingProcess:
             trained_element.gazetteer.write_settings(sf) # Write a settings file containing the data model and predicates.
 
         ### Clean up data we used for training. Free up memory.
-        training_element.gazetteer.cleanup_training()
+        trained_element.gazetteer.cleanup_training()
 
         print('=================================================================')
 
@@ -206,8 +200,8 @@ class ModelEvaluation():
     # TestForTraining compoem com Model Evaluation e SimularErros
 
     def __init__(self, canonical_file, messy_test_file, false_positives_file, false_negatives_file):
-        self.canonical_file = pesquisadores_file
-        self.messy_test_file = autorias_teste_file
+        self.canonical_file = canonical_file
+        self.messy_test_file = messy_test_file
 
         self.false_positives_file = false_positives_file
         self.false_negatives_file = false_negatives_file
@@ -384,37 +378,37 @@ class IPredict(ABC):
 class ProductionPredict(IPredict):
     """ Classication or Bloking Process """
 
-    def __init__(self, canonical_set_file, settings_file, messy_test_set_file):
+    def __init__(self, canonical_file, settings_file, messy_test_file):
         print('\n[PREDICTION PROCESS]')
-        self.messy_test_file = messy_test_set_file
+        self.messy_test_file = messy_test_file
         self.output_file = output_file
 
         print('Importing messy test data ...')
-        self.messy_test_d = readData(messy_test_set_file)
+        self.messy_test_d = readData(messy_test_file)
         print(f"Number of records from messy data for test (autorias): {len(self.messy_test_d)}")
 
         print('Reading from', settings_file)
         self.settings_file = settings_file
 
-        self.canonical_file = canonical_set_file
-        self.canonical_d = readData(canonical_set_file)
+        self.canonical_file = canonical_file
+        self.canonical_d = readData(canonical_file)
 
 
 class TrainingTest(IPredict):
-    def __init__(self, canonical_set_file, settings_file, messy_test_set_file, output_file, model_evaluation:ModelEvaluation):
+    def __init__(self, canonical_file, settings_file, messy_test_file, output_file, model_evaluation:ModelEvaluation):
         print('\n[PREDICTION PROCESS]')
-        self.messy_test_file = messy_test_set_file
+        self.messy_test_file = messy_test_file
         self.output_file = output_file
 
         print('Importing messy test data ...')
-        self.messy_test_d = readData(messy_test_set_file)
+        self.messy_test_d = readData(messy_test_file)
         print(f"Number of records from messy data for test (autorias): {len(self.messy_test_d)}")
 
         print('Reading from', settings_file)
         self.settings_file = settings_file
 
-        self.canonical_file = canonical_set_file
-        self.canonical_d = readData(canonical_set_file)
+        self.canonical_file = canonical_file
+        self.canonical_d = readData(canonical_file)
 
         self.model_evaluation = model_evaluation
 
