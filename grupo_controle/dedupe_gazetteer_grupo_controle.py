@@ -41,18 +41,18 @@ ARQUIVOS_TREINAMENTO_DIR = os.path.join(os.path.dirname(__file__),'arquivos/dado
 ARQUIVOS_SAIDA_DIR = os.path.join(os.path.dirname(__file__),'arquivos/dados_saida')
 
 # input files
-pesquisadores_file = os.path.join(ARQUIVOS_ENTRADA_DIR,'cj_canonico_pesquisadores.csv')
-autorias_treinamento_file = os.path.join(ARQUIVOS_ENTRADA_DIR,'cj_messy_autorias_para_treinamento.csv')
-autorias_validacao_file = os.path.join(ARQUIVOS_ENTRADA_DIR,'cj_messy_autorias_para_validacao.csv')
-autorias_teste_file = os.path.join(ARQUIVOS_ENTRADA_DIR,'cj_messy_autorias_para_teste.csv')
+ip_canonical_file = os.path.join(ARQUIVOS_ENTRADA_DIR,'cj_canonico_pesquisadores.csv')
+ip_messy_training_file = os.path.join(ARQUIVOS_ENTRADA_DIR,'cj_messy_autorias_para_treinamento.csv')
+ip_messy_validation_file = os.path.join(ARQUIVOS_ENTRADA_DIR,'cj_messy_autorias_para_validacao.csv')
+ip_messy_test_file = os.path.join(ARQUIVOS_ENTRADA_DIR,'cj_messy_autorias_para_teste.csv')
 
 # output files
-settings_file = os.path.join(ARQUIVOS_TREINAMENTO_DIR,'gazetteer_learned_settings')
-training_file = os.path.join(ARQUIVOS_TREINAMENTO_DIR,'gazetteer_training.json')
-output_file = os.path.join(ARQUIVOS_SAIDA_DIR,'gazetteer_matches_found.csv')
+op_settings_file = os.path.join(ARQUIVOS_TREINAMENTO_DIR,'gazetteer_learned_settings')
+op_training_file = os.path.join(ARQUIVOS_TREINAMENTO_DIR,'gazetteer_training.json')
+op_matches_found_file = os.path.join(ARQUIVOS_SAIDA_DIR,'gazetteer_matches_found.csv')
 
-false_positives_file = os.path.join(ARQUIVOS_SAIDA_DIR,'gazetteer_false_positives.csv')
-false_negatives_file = os.path.join(ARQUIVOS_SAIDA_DIR,'gazetteer_false_negatives.csv')
+op_false_positives_file = os.path.join(ARQUIVOS_SAIDA_DIR,'gazetteer_false_positives.csv')
+op_false_negatives_file = os.path.join(ARQUIVOS_SAIDA_DIR,'gazetteer_false_negatives.csv')
 
 ################################################################################
 
@@ -72,17 +72,16 @@ class TrainingElement:
                     {'field': 'ult_sobrenome', 'type': 'Exact'}
                 ]
 
-    def __init__(self, messy_validation_d, training_file):
+    def __init__(self, op_training_file):
         self.gazetteer = dedupe.Gazetteer(self.VARIABLES)
-        self.messy_validation_d = messy_validation_d
-        self.training_file = training_file
+        self.op_training_file = op_training_file
         self.performance = None
 
-    def prepare_training(self, labeled_messy_d, labeled_canonical_d, training_file=None, sample_size=None):
+    def prepare_training(self, labeled_messy_d, labeled_canonical_d, op_training_file=None, sample_size=None):
         self.labeled_messy_d = labeled_messy_d
         self.labeled_canonical_d = labeled_canonical_d
-        if training_file:
-            self.gazetteer.prepare_training(self.labeled_messy_d, self.labeled_canonical_d, training_file=training_file)
+        if op_training_file:
+            self.gazetteer.prepare_training(self.labeled_messy_d, self.labeled_canonical_d, training_file=op_training_file)
         elif sample_size:
             self.gazetteer.prepare_training(self.labeled_messy_d, self.labeled_canonical_d, sample_size=sample_size)
 
@@ -96,7 +95,7 @@ class TrainingElement:
     def write_training(self):
         # When finished, save the training away to disk
         # Write a JSON file that contains labeled examples (pairs)
-        with open(self.training_file, 'w') as tf:
+        with open(self.op_training_file, 'w') as tf:
             self.gazetteer.write_training(tf)
 
     def training_performance(self, value):
@@ -113,28 +112,28 @@ class TrainingElement:
 
 
 class TrainingProcess:
-    def __init__(self, canonical_file, settings_file,training_file):
-        self.settings_file = settings_file
-        self.training_file = training_file
-        self.canonical_d = readData(canonical_file)
+    def __init__(self, ip_canonical_file, op_settings_file, op_training_file):
+        self.op_settings_file = op_settings_file
+        self.op_training_file = op_training_file
+        self.canonical_d = readData(ip_canonical_file)
 
         # Always remove settings and training files on __init__
         try:
-            os.unlink(self.settings_file)
-            os.unlink(self.training_file)
+            os.unlink(self.op_settings_file)
+            os.unlink(self.op_training_file)
         except FileNotFoundError:
             pass
 
-    def training(self, messy_training_file, messy_validation_file, sample_size = 1000):
+    def training(self, ip_messy_training_file, ip_messy_validation_file, sample_size = 1000):
         # Reading data
-        messy_training_d = readData(messy_training_file)
+        messy_training_d = readData(ip_messy_training_file)
         labeled_pair_groups_list = getTrainingData(messy_d=messy_training_d, canonical_d=self.canonical_d,  sample_size=sample_size)
-        messy_validation_d = readData(messy_validation_file)
+        messy_validation_d = readData(ip_messy_validation_file)
         print(f"Number of records from messy data for validation (autorias): {len(messy_validation_d)}")
         print(f"Number of labeled pair groups: {len(labeled_pair_groups_list)}")
 
         print("\n[TRAINING PROCESS]")
-        trained_element = TrainingElement(messy_validation_d, training_file)
+        trained_element = TrainingElement(self.op_training_file)
 
         i = 0
         stop = False
@@ -143,7 +142,7 @@ class TrainingProcess:
         while i < n_groups and stop == False:
             print('=================================================================')
             print(f'Iteration: {i}')
-            (labeled_messy_d,labeled_canonical_d) = labeled_pair_groups_list[i]
+            (labeled_messy_d, labeled_canonical_d) = labeled_pair_groups_list[i]
 
 
             if i == 0:
@@ -156,9 +155,9 @@ class TrainingProcess:
                 print(f'[Validation] Dice Coefient: {trained_element}')
             else:
                 try:
-                    with open(self.training_file) as tf:
-                        print('Reading labeled examples from ', self.training_file)
-                        trained_element.prepare_training(labeled_messy_d, labeled_canonical_d, training_file=tf)
+                    with open(self.op_training_file) as tf:
+                        print('Reading labeled examples from ', self.op_training_file)
+                        trained_element.prepare_training(labeled_messy_d, labeled_canonical_d, op_training_file=tf)
                         trained_element.active_labeling()
                 except IOError:
                     raise
@@ -182,7 +181,7 @@ class TrainingProcess:
             former_trained_element = copy.deepcopy(trained_element)
 
         ### Save the weights and predicates to disk.
-        with open(self.settings_file, 'wb') as sf:
+        with open(self.op_settings_file, 'wb') as sf:
             trained_element.gazetteer.write_settings(sf) # Write a settings file containing the data model and predicates.
 
         ### Clean up data we used for training. Free up memory.
@@ -195,71 +194,50 @@ class TrainingProcess:
 class ModelEvaluation():
     """ Model Evaluation """
 
-    # usar classe abstrata com metodos concretos  para o prediction process. IPredict
-    # implementar duas classes concretas: PredictForProduction e TestTraining
-    # TestForTraining compoem com Model Evaluation e SimularErros
-
-    def __init__(self, canonical_file, messy_test_file, false_positives_file, false_negatives_file):
-        self.canonical_file = canonical_file
-        self.messy_test_file = messy_test_file
-
-        self.false_positives_file = false_positives_file
-        self.false_negatives_file = false_negatives_file
-
-        self.canonical_d = None
-        self.messy_test_d = None
-        self.found_matches_s = None
-        self.cluster_membership = None
-        self.messy_matches = None
+    def __init__(self, ip_canonical_file, ip_messy_test_file, op_false_positives_file, op_false_negatives_file):
+        self.ip_canonical_file = ip_canonical_file
+        self.ip_messy_test_file = ip_messy_test_file
+        self.op_false_positives_file = op_false_positives_file
+        self.op_false_negatives_file = op_false_negatives_file
+        self.canonical_2_save_d = readDataToSaveResults(self.ip_canonical_file)
+        self.messy_test_2_save_d = readDataToSaveResults(self.ip_messy_test_file)
 
 
-    def true_matches(self):
-        n_messy_test = len(self.messy_test_d)
-        n_canonical = len(self.canonical_d)
+    def true_matches(self, canonical_d, messy_test_d, found_matches_s):
+        n_messy_test = len(messy_test_d)
+        n_canonical = len(canonical_d)
 
         ### True matches set
-        true_matches_s = getTrueMatchesSet(canonical_d=self.canonical_d, messy_d=self.messy_test_d)
-        evaluateMatches(found_matches=self.found_matches_s, true_matches=true_matches_s, n_messy_test=n_messy_test, n_canonical=n_canonical)
+        true_matches_s = getTrueMatchesSet(canonical_d=canonical_d, messy_d=messy_test_d)
+        evaluateMatches(found_matches=found_matches_s, true_matches=true_matches_s, n_messy_test=n_messy_test, n_canonical=n_canonical)
 
-        true_positives_s = self.found_matches_s.intersection(true_matches_s)
-        self.false_positives_s = self.found_matches_s.difference(true_positives_s)
-        self.false_negatives_s = true_matches_s.difference(self.found_matches_s)
+        true_positives_s = found_matches_s.intersection(true_matches_s)
+        self.false_positives_s = found_matches_s.difference(true_positives_s)
+        self.false_negatives_s = true_matches_s.difference(found_matches_s)
 
 
 
-    def save_false_positives(self):
+    def save_false_positives(self, messy_matches, cluster_membership):
         ### salvando informacao obtida da clusterizacao
-
-        canon_file = self.canonical_file
-        messy_file = self.messy_test_file
-
-        canonical_d = readDataToSaveResults(canon_file) #self.canonical_d
-        messy_test_d = readDataToSaveResults(messy_file) #self.messy_test_d
-
-        messy_matches = self.messy_matches
-        cluster_membership = self.cluster_membership
-
 
         false_positives_d = collections.defaultdict(list)
         for (record_id_1, record_id_2) in self.false_positives_s:
-            canon_record_id = record_id_1 if canon_file in record_id_1 else record_id_2
+            canon_record_id = record_id_1 if self.ip_canonical_file in record_id_1 else record_id_2
             if canon_record_id not in false_positives_d.keys():
                 false_positives_d[canon_record_id] = []
 
         for (record_id_1, record_id_2) in self.false_positives_s:
-            messy_record_id = record_id_1 if messy_file in record_id_1 else record_id_2
-            canon_record_id = record_id_1 if canon_file in record_id_1 else record_id_2
+            messy_record_id = record_id_1 if self.ip_messy_test_file in record_id_1 else record_id_2
+            canon_record_id = record_id_1 if self.ip_canonical_file in record_id_1 else record_id_2
             false_positives_d[canon_record_id].append(messy_record_id)
 
-
         # obtendo cabeçalho original
-        with open(canon_file, newline='') as csvfile:
+        with open(self.ip_canonical_file, newline='') as csvfile:
             reader = csv.DictReader(csvfile, delimiter='|')
             headers = reader.fieldnames
 
-
         # salvando falsos positivos
-        with open(self.false_positives_file, 'w') as f_output:
+        with open(self.op_false_positives_file, 'w') as f_output:
             fieldnames = ['cluster_id','link_score','source_file', 'record_id'] + headers
             writer = csv.DictWriter(f_output, delimiter='|', fieldnames=fieldnames)
             writer.writeheader() # save the new fieldnames
@@ -269,45 +247,38 @@ class ModelEvaluation():
             # - entidades do conjunto messy, cuja correspondencia foi encontrada incorretamente
             for canon_record_id, messy_record_ids in list(false_positives_d.items()):
                 cluster_id =  cluster_membership[canon_record_id]
-                canon_record_row = canonical_d[canon_record_id].copy()
-                cluster_details = {'cluster_id':cluster_id, 'link_score':None, 'source_file':canon_file, 'record_id':canon_record_id}
+                canon_record_row = self.canonical_2_save_d[canon_record_id].copy()
+                cluster_details = {'cluster_id':cluster_id, 'link_score':None, 'source_file':self.ip_canonical_file, 'record_id':canon_record_id}
                 canon_record_row.update(cluster_details)
                 writer.writerow(canon_record_row)
                 for messy_record_id in messy_record_ids:
                     score = messy_matches[messy_record_id][canon_record_id]
-                    messy_record_row = messy_test_d[messy_record_id].copy()
-                    cluster_details = {'cluster_id':cluster_id, 'link_score':score, 'source_file':messy_file, 'record_id':messy_record_id}
+                    messy_record_row = self.messy_test_2_save_d[messy_record_id].copy()
+                    cluster_details = {'cluster_id':cluster_id, 'link_score':score, 'source_file':self.ip_messy_test_file, 'record_id':messy_record_id}
                     messy_record_row.update(cluster_details)
                     writer.writerow(messy_record_row)
 
     def save_false_negatives(self):
         ### salvando informacao obtida da clusterizacao
 
-        canon_file = self.canonical_file
-        messy_file = self.messy_test_file
-
-        canonical_d = readDataToSaveResults(canon_file) #self.canonical_d
-        messy_test_d = readDataToSaveResults(messy_file) #self.messy_test_d
-
-
         false_negatives_d = collections.defaultdict(list)
         for (record_id_1, record_id_2) in self.false_negatives_s:
-            canon_record_id = record_id_1 if canon_file in record_id_1 else record_id_2
+            canon_record_id = record_id_1 if self.ip_canonical_file in record_id_1 else record_id_2
             if canon_record_id not in false_negatives_d.keys():
                 false_negatives_d[canon_record_id] = []
 
         for (record_id_1, record_id_2) in self.false_negatives_s:
-            messy_record_id = record_id_1 if messy_file in record_id_1 else record_id_2
-            canon_record_id = record_id_1 if canon_file in record_id_1 else record_id_2
+            messy_record_id = record_id_1 if self.ip_messy_test_file in record_id_1 else record_id_2
+            canon_record_id = record_id_1 if self.ip_canonical_file in record_id_1 else record_id_2
             false_negatives_d[canon_record_id].append(messy_record_id)
 
         # obtendo cabeçalho original
-        with open(canon_file, newline='') as csvfile:
+        with open(self.ip_canonical_file, newline='') as csvfile:
             reader = csv.DictReader(csvfile, delimiter='|')
             headers = reader.fieldnames
 
         # salvando falsos negativos
-        with open(self.false_negatives_file, 'w') as f_output:
+        with open(self.op_false_negatives_file, 'w') as f_output:
             fieldnames = ['cluster_id','link_score','source_file', 'record_id'] + headers
             writer = csv.DictWriter(f_output, delimiter='|', fieldnames=fieldnames)
             writer.writeheader() # save the new fieldnames
@@ -316,15 +287,15 @@ class ModelEvaluation():
             # - entidades do conjunto canonico, cuja correspondencia nao foi encontrada
             # - entidades do conjunto messy, cuja correspondencia nao foi encontrada
             for canon_record_id, messy_record_ids in list(false_negatives_d.items()):
-                canon_record_row = canonical_d[canon_record_id].copy()
+                canon_record_row = self.canonical_2_save_d[canon_record_id].copy()
                 cluster_details = {'cluster_id':None, 'link_score':None,
-                                   'source_file':canon_file, 'record_id':canon_record_id}
+                                   'source_file':self.ip_canonical_file, 'record_id':canon_record_id}
                 canon_record_row.update(cluster_details)
                 writer.writerow(canon_record_row)
                 for messy_record_id in messy_record_ids:
-                    messy_record_row = messy_test_d[messy_record_id].copy()
+                    messy_record_row = self.messy_test_2_save_d[messy_record_id].copy()
                     cluster_details = { 'cluster_id':None, 'link_score':None,
-                                        'source_file': messy_file,'record_id': messy_record_id}
+                                        'source_file': self.ip_messy_test_file,'record_id': messy_record_id}
                     messy_record_row.update(cluster_details)
                     writer.writerow(messy_record_row)
 
@@ -336,8 +307,8 @@ class IPredict(ABC):
 
     def cluster_data(self):
         print('Clustering new data...')
-        print('Reading from', self.settings_file)
-        with open(settings_file, 'rb') as sf:
+        print('Reading from', self.op_settings_file)
+        with open(op_settings_file, 'rb') as sf:
             gazetteer = dedupe.StaticGazetteer(sf)
         gazetteer.index(self.canonical_d)
 
@@ -371,55 +342,53 @@ class IPredict(ABC):
         self.found_matches_s = found_matches_s
         self.messy_matches = messy_matches
         self.cluster_membership = cluster_membership
-        self.save_prediction_result(self.output_file)
+        self.save_prediction_result()
 
 
 
 class ProductionPredict(IPredict):
     """ Classication or Bloking Process """
 
-    def __init__(self, canonical_file, settings_file, messy_test_file):
+    def __init__(self, ip_canonical_file, op_settings_file, ip_messy_test_file, op_matches_found_file):
         print('\n[PREDICTION PROCESS]')
-        self.messy_test_file = messy_test_file
-        self.output_file = output_file
+        self.ip_messy_test_file = ip_messy_test_file
+        self.op_matches_found_file = op_matches_found_file
 
         print('Importing messy test data ...')
-        self.messy_test_d = readData(messy_test_file)
+        self.messy_test_d = readData(ip_messy_test_file)
         print(f"Number of records from messy data for test (autorias): {len(self.messy_test_d)}")
 
-        print('Reading from', settings_file)
-        self.settings_file = settings_file
+        print('Reading from', op_settings_file)
+        self.op_settings_file = op_settings_file
 
-        self.canonical_file = canonical_file
-        self.canonical_d = readData(canonical_file)
+        self.ip_canonical_file = ip_canonical_file
+        self.canonical_d = readData(ip_canonical_file)
 
 
 class TrainingTest(IPredict):
-    def __init__(self, canonical_file, settings_file, messy_test_file, output_file, model_evaluation:ModelEvaluation):
+    def __init__(self, ip_canonical_file, op_settings_file, ip_messy_test_file, op_matches_found_file, model_evaluation:ModelEvaluation):
         print('\n[PREDICTION PROCESS]')
-        self.messy_test_file = messy_test_file
-        self.output_file = output_file
+        self.ip_messy_test_file = ip_messy_test_file
+        self.op_matches_found_file = op_matches_found_file
 
         print('Importing messy test data ...')
-        self.messy_test_d = readData(messy_test_file)
+        self.messy_test_d = readData(ip_messy_test_file)
         print(f"Number of records from messy data for test (autorias): {len(self.messy_test_d)}")
 
-        print('Reading from', settings_file)
-        self.settings_file = settings_file
+        print('Reading from', op_settings_file)
+        self.op_settings_file = op_settings_file
 
-        self.canonical_file = canonical_file
-        self.canonical_d = readData(canonical_file)
+        self.ip_canonical_file = ip_canonical_file
+        self.canonical_d = readData(ip_canonical_file)
 
         self.model_evaluation = model_evaluation
 
 
-    def save_prediction_result(self, output_file):
+    def save_prediction_result(self):
         """ salvando informacao obtida da clusterizacao """
-        canon_file = self.canonical_file
-        messy_file = self.messy_test_file
 
-        canonical_d = readDataToSaveResults(canon_file) #self.canonical_d
-        messy_test_d = readDataToSaveResults(messy_file) #self.messy_test_d
+        canonical_d = readDataToSaveResults(self.ip_canonical_file) #self.canonical_d
+        messy_test_d = readDataToSaveResults(self.ip_messy_test_file) #self.messy_test_d
 
         found_matches_s = self.found_matches_s
         messy_matches = self.messy_matches
@@ -428,22 +397,22 @@ class TrainingTest(IPredict):
 
         found_matches_d = collections.defaultdict(list)
         for (record_id_1, record_id_2) in found_matches_s:
-            canon_record_id = record_id_1 if canon_file in record_id_1 else record_id_2
+            canon_record_id = record_id_1 if self.ip_canonical_file in record_id_1 else record_id_2
             if canon_record_id not in found_matches_d.keys():
                 found_matches_d[canon_record_id] = []
 
         for (record_id_1, record_id_2) in found_matches_s:
-            messy_record_id = record_id_1 if messy_file in record_id_1 else record_id_2
-            canon_record_id = record_id_1 if canon_file in record_id_1 else record_id_2
+            messy_record_id = record_id_1 if self.ip_messy_test_file in record_id_1 else record_id_2
+            canon_record_id = record_id_1 if self.ip_canonical_file in record_id_1 else record_id_2
             found_matches_d[canon_record_id].append(messy_record_id)
 
         # obtendo cabeçalho original
-        with open(canon_file, newline='') as csvfile:
+        with open(self.ip_canonical_file, newline='') as csvfile:
             reader = csv.DictReader(csvfile, delimiter='|')
             headers = reader.fieldnames
 
         # salvando resultados
-        with open(output_file, 'w') as f_output:
+        with open(self.op_matches_found_file, 'w') as f_output:
             fieldnames = ['cluster_id','link_score','source_file', 'record_id'] + headers
             writer = csv.DictWriter(f_output, delimiter='|', fieldnames=fieldnames)
             writer.writeheader() # save the new fieldnames
@@ -454,25 +423,19 @@ class TrainingTest(IPredict):
             for canon_record_id, messy_record_ids in list(found_matches_d.items()):
                 cluster_id =  cluster_membership[canon_record_id]
                 canon_record_row = canonical_d[canon_record_id].copy()
-                cluster_details = {'cluster_id':cluster_id, 'link_score':None, 'source_file':canon_file, 'record_id':canon_record_id}
+                cluster_details = {'cluster_id':cluster_id, 'link_score':None, 'source_file':self.ip_canonical_file, 'record_id':canon_record_id}
                 canon_record_row.update(cluster_details)
                 writer.writerow(canon_record_row)
                 for messy_record_id in messy_record_ids:
                     score = messy_matches[messy_record_id][canon_record_id]
                     messy_record_row = messy_test_d[messy_record_id].copy()
-                    cluster_details = {'cluster_id':cluster_id, 'link_score':score, 'source_file':messy_file, 'record_id':messy_record_id}
+                    cluster_details = {'cluster_id':cluster_id, 'link_score':score, 'source_file':self.ip_messy_test_file, 'record_id':messy_record_id}
                     messy_record_row.update(cluster_details)
                     writer.writerow(messy_record_row)
 
     def evaluate_model(self):
-        self.model_evaluation.canonical_d = self.canonical_d
-        self.model_evaluation.messy_test_d = self.messy_test_d
-        self.model_evaluation.found_matches_s = self.found_matches_s
-        self.model_evaluation.cluster_membership = self.cluster_membership
-        self.model_evaluation.messy_matches = self.messy_matches
-
-        self.model_evaluation.true_matches()
-        self.model_evaluation.save_false_positives()
+        self.model_evaluation.true_matches(self.canonical_d, self.messy_test_d, self.found_matches_s)
+        self.model_evaluation.save_false_positives(self.messy_matches, self.cluster_membership)
         self.model_evaluation.save_false_negatives()
 
 
@@ -508,12 +471,12 @@ if __name__ == '__main__':
     Skipt training with you have already trained otherwhise it will delete your trained and settings file,
     and train again.
     """
-    tp = TrainingProcess(pesquisadores_file, settings_file, training_file)
+    tp = TrainingProcess(ip_canonical_file, op_settings_file, op_training_file)
     print(f"Number of records from canonical data (pesquisadores unicos): {len(tp.canonical_d)}")
 
     sample_size = 1000
     step_time = datetime.now()
-    tp.training(autorias_treinamento_file, autorias_validacao_file, sample_size = 1000)
+    tp.training(ip_messy_training_file, ip_messy_validation_file, sample_size = 1000)
     end_time = datetime.now()
     print(f"Training Time: {end_time - step_time} \n")
     ###
@@ -521,8 +484,8 @@ if __name__ == '__main__':
 
     ### Prediction
     step_time = datetime.now()
-    model_evaluation = ModelEvaluation(pesquisadores_file, autorias_teste_file, false_positives_file, false_negatives_file)
-    tt = TrainingTest(pesquisadores_file, settings_file, autorias_teste_file, output_file, model_evaluation)
+    model_evaluation = ModelEvaluation(ip_canonical_file, ip_messy_test_file, op_false_positives_file, op_false_negatives_file)
+    tt = TrainingTest(ip_canonical_file, op_settings_file, ip_messy_test_file, op_matches_found_file, model_evaluation)
     tt.cluster_data()
     end_time = datetime.now()
     print(f"Prediction Time and File Recording Time: {end_time - step_time} \n")
