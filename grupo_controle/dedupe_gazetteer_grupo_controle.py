@@ -26,7 +26,7 @@ import dedupe
 import abc
 from abc import ABC, abstractmethod
 
-from dedupe_gazetteer_utils import (readData,
+from grupo_controle.dedupe_gazetteer_utils import (readData,
                                     getTrainingData, getTrueMatchesSet,
                                     getDiceCoefficient, evaluateMatches,
                                     readDataToSaveResults, chk_file_exists)
@@ -50,7 +50,6 @@ ip_messy_test_file = os.path.join(ARQUIVOS_ENTRADA_DIR,'cj_messy_autorias_para_t
 op_settings_file = os.path.join(ARQUIVOS_TREINAMENTO_DIR,'gazetteer_learned_settings')
 op_training_file = os.path.join(ARQUIVOS_TREINAMENTO_DIR,'gazetteer_training.json')
 op_matches_found_file = os.path.join(ARQUIVOS_SAIDA_DIR,'gazetteer_matches_found.csv')
-
 op_false_positives_file = os.path.join(ARQUIVOS_SAIDA_DIR,'gazetteer_false_positives.csv')
 op_false_negatives_file = os.path.join(ARQUIVOS_SAIDA_DIR,'gazetteer_false_negatives.csv')
 
@@ -78,6 +77,7 @@ class TrainingElement:
         self.performance = None
 
     def prepare_training(self, labeled_messy_d, labeled_canonical_d, op_training_file=None, sample_size=None):
+        """ Pre training required """
         self.labeled_messy_d = labeled_messy_d
         self.labeled_canonical_d = labeled_canonical_d
         if op_training_file:
@@ -86,15 +86,16 @@ class TrainingElement:
             self.gazetteer.prepare_training(self.labeled_messy_d, self.labeled_canonical_d, sample_size=sample_size)
 
     def active_labeling(self):
+        """ Mark pairs for already labeled data and train """
         print('Starting Active Labeling...')
         n_distinct_pairs = len(self.labeled_messy_d)
-        labeled_pairs = dedupe.training_data_link(self.labeled_messy_d, self.labeled_canonical_d,'link_id',training_size=n_distinct_pairs)
+        labeled_pairs = dedupe.training_data_link(self.labeled_messy_d, self.labeled_canonical_d, 'link_id', training_size=n_distinct_pairs)
         self.gazetteer.mark_pairs(labeled_pairs)
         self.gazetteer.train()
 
     def write_training(self):
-        # When finished, save the training away to disk
-        # Write a JSON file that contains labeled examples (pairs)
+        """ When finished, save the training away to disk
+        Write a JSON file that contains labeled examples (pairs) """
         with open(self.op_training_file, 'w') as tf:
             self.gazetteer.write_training(tf)
 
@@ -127,11 +128,10 @@ class TrainingProcess:
     def training(self, ip_messy_training_file, ip_messy_validation_file, sample_size = 1000):
         # Reading data
         messy_training_d = readData(ip_messy_training_file)
-        labeled_pair_groups_list = getTrainingData(messy_d=messy_training_d, canonical_d=self.canonical_d,  sample_size=sample_size)
         messy_validation_d = readData(ip_messy_validation_file)
+        labeled_pair_groups_list = getTrainingData(messy_d=messy_training_d, canonical_d=self.canonical_d,  sample_size=sample_size)
         print(f"Number of records from messy data for validation (autorias): {len(messy_validation_d)}")
         print(f"Number of labeled pair groups: {len(labeled_pair_groups_list)}")
-
         print("\n[TRAINING PROCESS]")
         trained_element = TrainingElement(self.op_training_file)
 
@@ -143,8 +143,6 @@ class TrainingProcess:
             print('=================================================================')
             print(f'Iteration: {i}')
             (labeled_messy_d, labeled_canonical_d) = labeled_pair_groups_list[i]
-
-
             if i == 0:
                 trained_element.prepare_training(labeled_messy_d, labeled_canonical_d, sample_size=150000)
                 trained_element.active_labeling()
@@ -349,7 +347,7 @@ class IPredict(ABC):
 class ProductionPredict(IPredict):
     """ Classication or Bloking Process """
 
-    def __init__(self, ip_canonical_file, op_settings_file, ip_messy_test_file, op_matches_found_file):
+    def __init__(self, ip_canonical_file, ip_messy_test_file, op_settings_file, op_matches_found_file):
         print('\n[PREDICTION PROCESS]')
         self.ip_messy_test_file = ip_messy_test_file
         self.op_matches_found_file = op_matches_found_file
@@ -366,7 +364,7 @@ class ProductionPredict(IPredict):
 
 
 class TrainingTest(IPredict):
-    def __init__(self, ip_canonical_file, op_settings_file, ip_messy_test_file, op_matches_found_file, model_evaluation:ModelEvaluation):
+    def __init__(self, ip_canonical_file, ip_messy_test_file, op_settings_file, op_matches_found_file, model_evaluation:ModelEvaluation):
         print('\n[PREDICTION PROCESS]')
         self.ip_messy_test_file = ip_messy_test_file
         self.op_matches_found_file = op_matches_found_file
@@ -485,7 +483,7 @@ if __name__ == '__main__':
     ### Prediction
     step_time = datetime.now()
     model_evaluation = ModelEvaluation(ip_canonical_file, ip_messy_test_file, op_false_positives_file, op_false_negatives_file)
-    tt = TrainingTest(ip_canonical_file, op_settings_file, ip_messy_test_file, op_matches_found_file, model_evaluation)
+    tt = TrainingTest(ip_canonical_file, ip_messy_test_file, op_settings_file, op_matches_found_file, model_evaluation)
     tt.cluster_data()
     end_time = datetime.now()
     print(f"Prediction Time and File Recording Time: {end_time - step_time} \n")
