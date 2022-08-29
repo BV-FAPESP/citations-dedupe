@@ -48,6 +48,15 @@ def readData(filename):
 
     return data_d
 
+def chk_file_exists(filename):
+    """
+    Check if a file exists
+    """
+    try:
+        return open(filename)
+    except IOError:
+        raise
+
 
 def getTrainingData(messy_d, canonical_d, sample_size):
     """
