@@ -85,9 +85,9 @@ class TrainingElement:
         elif sample_size:
             self.gazetteer.prepare_training(self.labeled_messy_d, self.labeled_canonical_d, sample_size=sample_size)
 
-    def active_labeling(self):
+    def model_training(self):
         """ Mark pairs for already labeled data and train """
-        print('Starting Active Labeling...')
+        print('Starting labeling and train the model...')
         n_distinct_pairs = len(self.labeled_messy_d)
         labeled_pairs = dedupe.training_data_link(self.labeled_messy_d, self.labeled_canonical_d, 'link_id', training_size=n_distinct_pairs)
         self.gazetteer.mark_pairs(labeled_pairs)
@@ -145,7 +145,7 @@ class TrainingProcess:
             (labeled_messy_d, labeled_canonical_d) = labeled_pair_groups_list[i]
             if i == 0:
                 trained_element.prepare_training(labeled_messy_d, labeled_canonical_d, sample_size=150000)
-                trained_element.active_labeling()
+                trained_element.model_training()
                 trained_element.write_training()
 
                 dc = getDiceCoefficient(gazetteer_obj=trained_element.gazetteer, canonical_d=self.canonical_d, validation_d=messy_validation_d)
@@ -156,7 +156,7 @@ class TrainingProcess:
                     with open(self.op_training_file) as tf:
                         print('Reading labeled examples from ', self.op_training_file)
                         trained_element.prepare_training(labeled_messy_d, labeled_canonical_d, op_training_file=tf)
-                        trained_element.active_labeling()
+                        trained_element.model_training()
                 except IOError:
                     raise
 
@@ -201,7 +201,7 @@ class ModelEvaluation():
         self.messy_test_2_save_d = readDataToSaveResults(self.ip_messy_test_file)
 
 
-    def true_matches(self, canonical_d, messy_test_d, found_matches_s):
+    def evaluate_matches(self, canonical_d, messy_test_d, found_matches_s):
         n_messy_test = len(messy_test_d)
         n_canonical = len(canonical_d)
 
@@ -432,7 +432,7 @@ class TrainingTest(IPredict):
                     writer.writerow(messy_record_row)
 
     def evaluate_model(self):
-        self.model_evaluation.true_matches(self.canonical_d, self.messy_test_d, self.found_matches_s)
+        self.model_evaluation.evaluate_matches(self.canonical_d, self.messy_test_d, self.found_matches_s)
         self.model_evaluation.save_false_positives(self.messy_matches, self.cluster_membership)
         self.model_evaluation.save_false_negatives()
 
