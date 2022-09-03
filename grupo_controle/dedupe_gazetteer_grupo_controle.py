@@ -22,6 +22,11 @@ import logging
 import optparse
 import collections
 import dedupe
+import string
+import random
+import math
+
+from ..generic_utils import *
 
 import abc
 from abc import ABC, abstractmethod
@@ -362,6 +367,40 @@ class ProductionPredict(IPredict):
         self.ip_canonical_file = ip_canonical_file
         self.canonical_d = readData(ip_canonical_file)
 
+class Noisify():
+    """
+        Generates data augmentation adding noise based on percentual or number of characters.
+    """
+    def __init__(self, data, amount, percentual=True):
+        self.data = data
+        self.amount = amount
+        self.percentual = percentual # if not true, amount is treated as number of characters
+
+    def add_noise(self, name):
+        if self.percentual:
+            number_of_characters = math.ceil(((len(name)*self.amount/100)))
+        else:
+            number_of_characters = self.amount
+        special_characters_indices = [i for i, c in enumerate(name) 
+                                      if c == ' ' or c == '.' or c == ',']
+        noise_indices = []
+        for i in range(number_of_characters):
+            noise_indices.append(random.choice([i for i in range(0,len(name)) 
+                                                if i not in special_characters_indices]))
+        s = list(name)
+        for noise in noise_indices:
+            s[noise] = random.choice(string.ascii_letters)
+        
+        return ''.join(s)
+
+    def get_noisy_data(self):
+        self.data['nome'] = self.data['nome'].apply(lambda x: add_noise(x))
+        self.data['primeiro_nome'] = self.data['nome'].apply(lambda x: getLongFirstName(remover_acentos(x)))
+        self.data['abr'] = self.data['nome'].apply(lambda x: getPartialAbbreviation(remover_acentos(x)))
+        self.data['ult_sobrenome'] = self.data['nome'].apply(lambda x: getLastName(remover_acentos(x)))
+        
+        return self.data
+
 
 class TrainingTest(IPredict):
     def __init__(self, ip_canonical_file, ip_messy_test_file, op_settings_file, op_matches_found_file, model_evaluation:ModelEvaluation):
@@ -435,6 +474,11 @@ class TrainingTest(IPredict):
         self.model_evaluation.true_matches(self.canonical_d, self.messy_test_d, self.found_matches_s)
         self.model_evaluation.save_false_positives(self.messy_matches, self.cluster_membership)
         self.model_evaluation.save_false_negatives()
+
+    def noisify(self, amount, percentual):
+        noisify = Noisify(self.messy_test_d, amount, percentual)
+        noisy_data = noisify.get_noisy_data()
+        return noisy_data
 
 
 if __name__ == '__main__':
