@@ -26,12 +26,12 @@ import string
 import random
 import math
 
-from generic_utils import *
+from src.generic_utils import *
 
 import abc
 from abc import ABC, abstractmethod
 
-from grupo_controle.dedupe_gazetteer_utils import (readData,
+from src.dedupe_gazetteer_utils import (readData,
                                     getTrainingData, getTrueMatchesSet,
                                     getDiceCoefficient, evaluateMatches,
                                     readDataToSaveResults)
@@ -40,10 +40,10 @@ from datetime import datetime
 
 ################################################################################
 ### Setup
-ARQUIVOS_AUX_DIR = os.path.join(os.path.dirname(__file__),'arquivos/dados_auxiliares')
-ARQUIVOS_ENTRADA_DIR = os.path.join(os.path.dirname(__file__),'arquivos/dados_entrada')
-ARQUIVOS_TREINAMENTO_DIR = os.path.join(os.path.dirname(__file__),'arquivos/dados_treinamento')
-ARQUIVOS_SAIDA_DIR = os.path.join(os.path.dirname(__file__),'arquivos/dados_saida')
+ARQUIVOS_AUX_DIR = os.path.join(os.environ['PYTHONPATH'],'arquivos/dados_auxiliares')
+ARQUIVOS_ENTRADA_DIR = os.path.join(os.environ['PYTHONPATH'],'arquivos/dados_entrada')
+ARQUIVOS_TREINAMENTO_DIR = os.path.join(os.environ['PYTHONPATH'],'arquivos/dados_treinamento')
+ARQUIVOS_SAIDA_DIR = os.path.join(os.environ['PYTHONPATH'],'arquivos/dados_saida')
 
 # input files
 ip_canonical_file = os.path.join(ARQUIVOS_ENTRADA_DIR,'cj_canonico_pesquisadores.csv')

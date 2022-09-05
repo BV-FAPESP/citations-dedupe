@@ -1,20 +1,19 @@
 import pdb
-from grupo_controle import dedupe_gazetteer_grupo_controle as gc
-from grupo_controle import dedupe_gazetteer_utils as du
+from src import dedupe_gazetteer as gc
+from src import dedupe_gazetteer_utils as du
 
 
-import unittest
 import _io, os
+import unittest
 import dedupe
-
 
 ################################################################################
 # FILES
 ### Setup
-ARQUIVOS_AUX_DIR = os.path.join(os.path.dirname(__file__),'../grupo_controle/arquivos/dados_auxiliares')
-ARQUIVOS_ENTRADA_DIR = os.path.join(os.path.dirname(__file__),'../grupo_controle/arquivos/dados_entrada')
-ARQUIVOS_TREINAMENTO_DIR = os.path.join(os.path.dirname(__file__),'../grupo_controle/arquivos/dados_treinamento')
-ARQUIVOS_SAIDA_DIR = os.path.join(os.path.dirname(__file__),'../grupo_controle/arquivos/dados_saida')
+ARQUIVOS_AUX_DIR = os.path.join(os.environ['PYTHONPATH'],'arquivos/dados_auxiliares')
+ARQUIVOS_ENTRADA_DIR = os.path.join(os.environ['PYTHONPATH'],'arquivos/dados_entrada')
+ARQUIVOS_TREINAMENTO_DIR = os.path.join(os.environ['PYTHONPATH'],'arquivos/dados_treinamento')
+ARQUIVOS_SAIDA_DIR = os.path.join(os.environ['PYTHONPATH'],'arquivos/dados_saida')
 
 # input files
 ip_canonical_file = os.path.join(ARQUIVOS_ENTRADA_DIR,'cj_canonico_pesquisadores.csv')
@@ -28,6 +27,8 @@ op_training_file = os.path.join(ARQUIVOS_TREINAMENTO_DIR,'gazetteer_training.jso
 op_matches_found_file = os.path.join(ARQUIVOS_SAIDA_DIR,'gazetteer_matches_found.csv')
 op_false_positives_file = os.path.join(ARQUIVOS_SAIDA_DIR,'gazetteer_false_positives.csv')
 op_false_negatives_file = os.path.join(ARQUIVOS_SAIDA_DIR,'gazetteer_false_negatives.csv')
+
+
 ################################################################################
 INPUT_FILES = [ip_canonical_file, ip_messy_training_file,\
                         ip_messy_validation_file, ip_messy_test_file]
@@ -52,9 +53,19 @@ class TestInitialData(unittest.TestCase):
 
 
 class TestTrainingProcess(unittest.TestCase):
+    def setUp(self):
+        VARIABLES = [
+                        {'field': 'nome', 'type': 'String'},
+                        {'field': 'nome', 'type': 'Text'},
+                        {'field': 'primeiro_nome', 'type':'Exact', 'has missing': True},
+                        {'field': 'abr', 'type':'ShortString'},
+                        {'field': 'ult_sobrenome', 'type': 'Exact'}
+                    ]
+        self.training_element = gc.TrainingElement(op_training_file, VARIABLES)
+
     def test_init(self):
         """ Test TrainingProcess __init__ method """
-        training_process = gc.TrainingProcess(ip_canonical_file, op_settings_file, op_training_file)
+        training_process = gc.TrainingProcess(ip_canonical_file, op_settings_file, op_training_file, training_element = self.training_element)
         self.assertIsInstance(training_process, gc.TrainingProcess)
 
     def test_get_training_data(self):
@@ -80,7 +91,14 @@ class TestTrainingElement(unittest.TestCase):
     """
     def setUp(self):
         """ Test TrainingElement __init__ method """
-        self.training_element = gc.TrainingElement(op_training_file)
+        VARIABLES = [
+                        {'field': 'nome', 'type': 'String'},
+                        {'field': 'nome', 'type': 'Text'},
+                        {'field': 'primeiro_nome', 'type':'Exact', 'has missing': True},
+                        {'field': 'abr', 'type':'ShortString'},
+                        {'field': 'ult_sobrenome', 'type': 'Exact'}
+                    ]
+        self.training_element = gc.TrainingElement(op_training_file, VARIABLES)
         self.canonical_d = du.readData(ip_canonical_file)
         self.messy_training_d = du.readData(ip_messy_training_file)
         self.sample_size = 1000

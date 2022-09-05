@@ -1,6 +1,6 @@
 
 # Arquivos
-grupo_controle/arquivos/dados_treinamento/*
+arquivos/dados_treinamento/*
 
 *.swp
 *.txt
@@ -9,6 +9,7 @@ grupo_controle/arquivos/dados_treinamento/*
 *.~lock.*
 *.old
 *.bkp
+.vscode/
 
 # Pastas a manter
 !grupo_controle/arquivos/dados_auxiliares/.gitkeep
