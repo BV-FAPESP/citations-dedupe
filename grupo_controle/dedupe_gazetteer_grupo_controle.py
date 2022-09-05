@@ -26,7 +26,7 @@ import string
 import random
 import math
 
-from ..generic_utils import *
+from generic_utils import *
 
 import abc
 from abc import ABC, abstractmethod
@@ -368,16 +368,16 @@ class Noisify():
             number_of_characters = math.ceil(((len(name)*self.amount/100)))
         else:
             number_of_characters = self.amount
-        special_characters_indices = [i for i, c in enumerate(name) 
+        special_characters_indices = [i for i, c in enumerate(name)
                                       if c == ' ' or c == '.' or c == ',']
         noise_indices = []
         for i in range(number_of_characters):
-            noise_indices.append(random.choice([i for i in range(0,len(name)) 
+            noise_indices.append(random.choice([i for i in range(0,len(name))
                                                 if i not in special_characters_indices]))
         s = list(name)
         for noise in noise_indices:
             s[noise] = random.choice(string.ascii_letters)
-        
+
         return ''.join(s)
 
     def get_noisy_data(self):
@@ -385,7 +385,7 @@ class Noisify():
         self.data['primeiro_nome'] = self.data['nome'].apply(lambda x: getLongFirstName(remover_acentos(x)))
         self.data['abr'] = self.data['nome'].apply(lambda x: getPartialAbbreviation(remover_acentos(x)))
         self.data['ult_sobrenome'] = self.data['nome'].apply(lambda x: getLastName(remover_acentos(x)))
-        
+
         return self.data
 
 
