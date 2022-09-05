@@ -29,7 +29,7 @@ from abc import ABC, abstractmethod
 from grupo_controle.dedupe_gazetteer_utils import (readData,
                                     getTrainingData, getTrueMatchesSet,
                                     getDiceCoefficient, evaluateMatches,
-                                    readDataToSaveResults, chk_file_exists)
+                                    readDataToSaveResults)
 
 from datetime import datetime
 
@@ -57,26 +57,12 @@ op_false_negatives_file = os.path.join(ARQUIVOS_SAIDA_DIR,'gazetteer_false_negat
 
 
 class TrainingElement:
-
-    ### Variables Definition
-    # Define the fields the gazetteer will pay attention to, by creating
-    # a list of dictionaries describing the variables will be used for training a model.
-    # Note that a variable definition describes the records that you want to match, and
-    # it is a dictionary where the keys are the fields and the values are the field specification.
-    VARIABLES = [
-                    {'field': 'nome', 'type': 'String'},
-                    {'field': 'nome', 'type': 'Text'},
-                    {'field': 'primeiro_nome', 'type':'Exact', 'has missing': True},
-                    {'field': 'abr', 'type':'ShortString'},
-                    {'field': 'ult_sobrenome', 'type': 'Exact'}
-                ]
-
-    def __init__(self, op_training_file):
-        self.gazetteer = dedupe.Gazetteer(self.VARIABLES)
+    def __init__(self, op_training_file: str, variables: list):
+        self.gazetteer = dedupe.Gazetteer(variables)
         self.op_training_file = op_training_file
         self.performance = None
 
-    def prepare_training(self, labeled_messy_d, labeled_canonical_d, op_training_file=None, sample_size=None):
+    def prepare_training(self, labeled_messy_d: dict, labeled_canonical_d: dict, op_training_file: str=None, sample_size: int=None):
         """ Pre training required """
         self.labeled_messy_d = labeled_messy_d
         self.labeled_canonical_d = labeled_canonical_d
@@ -113,10 +99,11 @@ class TrainingElement:
 
 
 class TrainingProcess:
-    def __init__(self, ip_canonical_file, op_settings_file, op_training_file):
+    def __init__(self, ip_canonical_file: str, op_settings_file: str, op_training_file: str, training_element: TrainingElement) -> None:
         self.op_settings_file = op_settings_file
         self.op_training_file = op_training_file
         self.canonical_d = readData(ip_canonical_file)
+        self.training_element = training_element
 
         # Always remove settings and training files on __init__
         try:
@@ -125,7 +112,7 @@ class TrainingProcess:
         except FileNotFoundError:
             pass
 
-    def training(self, ip_messy_training_file, ip_messy_validation_file, sample_size = 1000):
+    def training(self, ip_messy_training_file: str, ip_messy_validation_file: str, sample_size: int=1000):
         # Reading data
         messy_training_d = readData(ip_messy_training_file)
         messy_validation_d = readData(ip_messy_validation_file)
@@ -133,7 +120,7 @@ class TrainingProcess:
         print(f"Number of records from messy data for validation (autorias): {len(messy_validation_d)}")
         print(f"Number of labeled pair groups: {len(labeled_pair_groups_list)}")
         print("\n[TRAINING PROCESS]")
-        trained_element = TrainingElement(self.op_training_file)
+        trained_element = self.training_element
 
         i = 0
         stop = False
@@ -192,7 +179,7 @@ class TrainingProcess:
 class ModelEvaluation():
     """ Model Evaluation """
 
-    def __init__(self, ip_canonical_file, ip_messy_test_file, op_false_positives_file, op_false_negatives_file):
+    def __init__(self, ip_canonical_file: str, ip_messy_test_file: str, op_false_positives_file: str, op_false_negatives_file: str):
         self.ip_canonical_file = ip_canonical_file
         self.ip_messy_test_file = ip_messy_test_file
         self.op_false_positives_file = op_false_positives_file
@@ -201,7 +188,7 @@ class ModelEvaluation():
         self.messy_test_2_save_d = readDataToSaveResults(self.ip_messy_test_file)
 
 
-    def evaluate_matches(self, canonical_d, messy_test_d, found_matches_s):
+    def evaluate_matches(self, canonical_d: dict, messy_test_d: dict, found_matches_s: set):
         n_messy_test = len(messy_test_d)
         n_canonical = len(canonical_d)
 
@@ -347,7 +334,7 @@ class IPredict(ABC):
 class ProductionPredict(IPredict):
     """ Classication or Bloking Process """
 
-    def __init__(self, ip_canonical_file, ip_messy_test_file, op_settings_file, op_matches_found_file):
+    def __init__(self, ip_canonical_file: str, ip_messy_test_file: str, op_settings_file: str, op_matches_found_file: str):
         print('\n[PREDICTION PROCESS]')
         self.ip_messy_test_file = ip_messy_test_file
         self.op_matches_found_file = op_matches_found_file
@@ -364,7 +351,7 @@ class ProductionPredict(IPredict):
 
 
 class TrainingTest(IPredict):
-    def __init__(self, ip_canonical_file, ip_messy_test_file, op_settings_file, op_matches_found_file, model_evaluation:ModelEvaluation):
+    def __init__(self, ip_canonical_file: str, ip_messy_test_file: str, op_settings_file: str, op_matches_found_file: str, model_evaluation:ModelEvaluation):
         print('\n[PREDICTION PROCESS]')
         self.ip_messy_test_file = ip_messy_test_file
         self.op_matches_found_file = op_matches_found_file
@@ -465,11 +452,27 @@ if __name__ == '__main__':
 
 
     ### Training
+
+    ### Variables Definition
+    # Define the fields the gazetteer will pay attention to, by creating
+    # a list of dictionaries describing the variables will be used for training a model.
+    # Note that a variable definition describes the records that you want to match, and
+    # it is a dictionary where the keys are the fields and the values are the field specification.
+    VARIABLES = [
+                    {'field': 'nome', 'type': 'String'},
+                    {'field': 'nome', 'type': 'Text'},
+                    {'field': 'primeiro_nome', 'type':'Exact', 'has missing': True},
+                    {'field': 'abr', 'type':'ShortString'},
+                    {'field': 'ult_sobrenome', 'type': 'Exact'}
+                ]
+
+    training_element = TrainingElement(op_training_file, VARIABLES)
+
     """
     Skipt training with you have already trained otherwhise it will delete your trained and settings file,
     and train again.
     """
-    tp = TrainingProcess(ip_canonical_file, op_settings_file, op_training_file)
+    tp = TrainingProcess(ip_canonical_file, op_settings_file, op_training_file, training_element)
     print(f"Number of records from canonical data (pesquisadores unicos): {len(tp.canonical_d)}")
 
     sample_size = 1000
