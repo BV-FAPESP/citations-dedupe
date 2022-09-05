@@ -25,7 +25,7 @@ import collections
 from datetime import datetime
 
 
-ARQUIVOS_SAIDA_DIR = os.path.join(os.path.dirname(__file__),'arquivos/dados_saida')
+ARQUIVOS_SAIDA_DIR = os.path.join(os.environ['PYTHONPATH'], 'arquivos/dados_saida')
 
 # input files
 output_dedupe_file = os.path.join(ARQUIVOS_SAIDA_DIR,'gazetteer_matches_found.csv')

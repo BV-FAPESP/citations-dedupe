@@ -19,15 +19,15 @@ from os import path
 sys.path.append(path.join(path.dirname(__file__), '..'))
 
 
-from classes_genericas import AutoriasComProjeto
+from src.classes_genericas import AutoriasComProjeto
 
 
 from datetime import datetime
 
 
 ######################################################################
-ARQUIVOS_AUX_DIR = os.path.join(os.path.dirname(__file__),'arquivos/dados_auxiliares')
-ARQUIVOS_ENTRADA_DIR = os.path.join(os.path.dirname(__file__),'arquivos/dados_entrada')
+ARQUIVOS_AUX_DIR = os.path.join(os.environ['PYTHONPATH'], 'arquivos/dados_auxiliares')
+ARQUIVOS_ENTRADA_DIR = os.path.join(os.environ['PYTHONPATH'], 'arquivos/dados_entrada')
 
 ## Input file
 # Contains true matches between FAPESP researcher set and WoS author set
