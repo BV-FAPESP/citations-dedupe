@@ -10,10 +10,9 @@ import math
 from abc import ABC, abstractmethod
 from src.generic_utils import *
 
-from src.dedupe_gazetteer_utils import (readData,
-                                    getTrainingData, getTrueMatchesSet,
-                                    getDiceCoefficient, evaluateMatches,
-                                    readDataToSaveResults)
+from src.dedupe_gazetteer_utils import (readData,getTrainingData, getTrueMatchesSet,
+                                        getDiceCoefficient, evaluateMatches, readDataToSaveResults)
+
 
 class TrainingElement:
     def __init__(self, op_training_file: str, variables: list):
@@ -52,9 +51,6 @@ class TrainingElement:
 
     def __str__(self):
         return str(round(self.performance, 4))
-
-
-
 
 
 class TrainingProcess:
