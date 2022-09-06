@@ -240,6 +240,40 @@ class ModelEvaluation():
                     writer.writerow(messy_record_row)
 
 
+class Noisify():
+    """
+        Generates data augmentation adding noise based on percentual or number of characters.
+    """
+    def __init__(self, amount, percentual=True):
+        self.amount = amount
+        self.percentual = percentual # if not true, amount is treated as number of characters
+
+    def add_noise(self, name):
+        if self.percentual:
+            number_of_characters = math.ceil(((len(name)*self.amount/100)))
+        else:
+            number_of_characters = self.amount
+        special_characters_indices = [i for i, c in enumerate(name)
+                                      if c == ' ' or c == '.' or c == ',']
+        noise_indices = []
+        for i in range(number_of_characters):
+            noise_indices.append(random.choice([i for i in range(0,len(name))
+                                                if i not in special_characters_indices]))
+        s = list(name)
+        for noise in noise_indices:
+            s[noise] = random.choice(string.ascii_letters)
+
+        return ''.join(s)
+
+    def get_noisy_data(self, data):
+        data['nome'] = data['nome'].apply(lambda x: self.add_noise(x))
+        data['primeiro_nome'] = data['nome'].apply(lambda x: getLongFirstName(remover_acentos(x)))
+        data['abr'] = data['nome'].apply(lambda x: getPartialAbbreviation(remover_acentos(x)))
+        data['ult_sobrenome'] = data['nome'].apply(lambda x: getLastName(remover_acentos(x)))
+
+        return data
+
+
 class IPredict(ABC):
     @abstractmethod
     def __init__():
@@ -304,43 +338,15 @@ class ProductionPredict(IPredict):
         self.ip_canonical_file = ip_canonical_file
         self.canonical_d = readData(ip_canonical_file)
 
-class Noisify():
-    """
-        Generates data augmentation adding noise based on percentual or number of characters.
-    """
-    def __init__(self, data, amount, percentual=True):
-        self.data = data
-        self.amount = amount
-        self.percentual = percentual # if not true, amount is treated as number of characters
-
-    def add_noise(self, name):
-        if self.percentual:
-            number_of_characters = math.ceil(((len(name)*self.amount/100)))
-        else:
-            number_of_characters = self.amount
-        special_characters_indices = [i for i, c in enumerate(name)
-                                      if c == ' ' or c == '.' or c == ',']
-        noise_indices = []
-        for i in range(number_of_characters):
-            noise_indices.append(random.choice([i for i in range(0,len(name))
-                                                if i not in special_characters_indices]))
-        s = list(name)
-        for noise in noise_indices:
-            s[noise] = random.choice(string.ascii_letters)
-
-        return ''.join(s)
-
-    def get_noisy_data(self):
-        self.data['nome'] = self.data['nome'].apply(lambda x: add_noise(x))
-        self.data['primeiro_nome'] = self.data['nome'].apply(lambda x: getLongFirstName(remover_acentos(x)))
-        self.data['abr'] = self.data['nome'].apply(lambda x: getPartialAbbreviation(remover_acentos(x)))
-        self.data['ult_sobrenome'] = self.data['nome'].apply(lambda x: getLastName(remover_acentos(x)))
-
-        return self.data
-
 
 class TrainingTest(IPredict):
-    def __init__(self, ip_canonical_file: str, ip_messy_test_file: str, op_settings_file: str, op_matches_found_file: str, model_evaluation:ModelEvaluation):
+    def __init__(self, ip_canonical_file: str,
+                        ip_messy_test_file: str,
+                        op_settings_file: str,
+                        op_matches_found_file: str,
+                        model_evaluation: ModelEvaluation=None,
+                        noisify: Noisify=None):
+
         print('\n[PREDICTION PROCESS]')
         self.ip_messy_test_file = ip_messy_test_file
         self.op_matches_found_file = op_matches_found_file
@@ -356,6 +362,7 @@ class TrainingTest(IPredict):
         self.canonical_d = readData(ip_canonical_file)
 
         self.model_evaluation = model_evaluation
+        self.noisify_o = noisify
 
 
     def save_prediction_result(self):
@@ -412,7 +419,6 @@ class TrainingTest(IPredict):
         self.model_evaluation.save_false_positives(self.messy_matches, self.cluster_membership)
         self.model_evaluation.save_false_negatives()
 
-    def noisify(self, amount, percentual):
-        noisify = Noisify(self.messy_test_d, amount, percentual)
-        noisy_data = noisify.get_noisy_data()
+    def noisify(self):
+        noisy_data = self.noisify_o.get_noisy_data(self.messy_test_d)
         return noisy_data
