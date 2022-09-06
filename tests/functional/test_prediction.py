@@ -3,36 +3,40 @@ from src import dedupe_gazetteer as dg
 from src import dedupe_gazetteer_utils as du
 
 
-import _io, os
+import os
 import unittest
-import dedupe
+from datetime import datetime
 
-################################################################################
-# FILES
-### Setup
-ARQUIVOS_AUX_DIR = os.path.join(os.environ['PYTHONPATH'],'arquivos/dados_auxiliares')
-ARQUIVOS_ENTRADA_DIR = os.path.join(os.environ['PYTHONPATH'],'arquivos/dados_entrada')
-ARQUIVOS_TREINAMENTO_DIR = os.path.join(os.environ['PYTHONPATH'],'arquivos/dados_treinamento')
-ARQUIVOS_SAIDA_DIR = os.path.join(os.environ['PYTHONPATH'],'arquivos/dados_saida')
+from settings import *
 
-# input files
-ip_canonical_file = os.path.join(ARQUIVOS_ENTRADA_DIR,'cj_canonico_pesquisadores.csv')
-ip_messy_training_file = os.path.join(ARQUIVOS_ENTRADA_DIR,'cj_messy_autorias_para_treinamento.csv')
-ip_messy_validation_file = os.path.join(ARQUIVOS_ENTRADA_DIR,'cj_messy_autorias_para_validacao.csv')
-ip_messy_test_file = os.path.join(ARQUIVOS_ENTRADA_DIR,'cj_messy_autorias_para_teste.csv')
+class TestPredictionProcess(unittest.TestCase):
+    def setUp(self) -> None:
+        self.model_evaluation = dg.ModelEvaluation(ip_canonical_file, ip_messy_test_file, op_false_positives_file, op_false_negatives_file)
+        self.noisify = dg.Noisify(1, 1)
+        return super().setUp()
 
-# output files
-op_settings_file = os.path.join(ARQUIVOS_TREINAMENTO_DIR,'gazetteer_learned_settings')
-op_training_file = os.path.join(ARQUIVOS_TREINAMENTO_DIR,'gazetteer_training.json')
-op_matches_found_file = os.path.join(ARQUIVOS_SAIDA_DIR,'gazetteer_matches_found.csv')
-op_false_positives_file = os.path.join(ARQUIVOS_SAIDA_DIR,'gazetteer_false_positives.csv')
-op_false_negatives_file = os.path.join(ARQUIVOS_SAIDA_DIR,'gazetteer_false_negatives.csv')
+    def test_noisify(self):
+        noisify = dg.Noisify(1, 1)
+        self.assertIsInstance(noisify, dg.Noisify)
+
+    def test_training_test(self):
+        tt = dg.TrainingTest(ip_canonical_file, ip_messy_test_file, op_settings_file, op_matches_found_file, self.model_evaluation, self.noisify)
 
 
-
-
-class TestModelEvaluation(unittest.TestCase):
-    def test_init(self):
-        """ Test ModelEvaluation __init__ method """
+    def test_prediction(self):
+        ### Prediction
+        step_time = datetime.now()
         model_evaluation = dg.ModelEvaluation(ip_canonical_file, ip_messy_test_file, op_false_positives_file, op_false_negatives_file)
-        self.assertIsInstance(model_evaluation, dg.ModelEvaluation)
+        tt = dg.TrainingTest(ip_canonical_file, ip_messy_test_file, op_settings_file, op_matches_found_file, model_evaluation)
+        tt.cluster_data()
+        end_time = datetime.now()
+        print(f"Prediction Time and File Recording Time: {end_time - step_time} \n")
+        ###
+
+    def evaluate_model(self):
+        ### Performance of the algorithm
+        step_time = datetime.now()
+        tt.evaluate_model()
+        end_time = datetime.now()
+        print(f"Model Evaluation Time and Files Recording Time: {end_time - step_time} \n")
+        ###
