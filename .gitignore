@@ -11,6 +11,8 @@ arquivos/dados_treinamento/*
 *.bkp
 .vscode/
 
+backup/
+
 # Pastas a manter
 !grupo_controle/arquivos/dados_auxiliares/.gitkeep
 !grupo_controle/arquivos/dados_entrada/.gitkeep
