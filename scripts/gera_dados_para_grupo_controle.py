@@ -26,8 +26,8 @@ from datetime import datetime
 
 
 ######################################################################
-ARQUIVOS_AUX_DIR = os.path.join(os.environ['PYTHONPATH'], 'arquivos/dados_auxiliares')
-ARQUIVOS_ENTRADA_DIR = os.path.join(os.environ['PYTHONPATH'], 'arquivos/dados_entrada')
+ARQUIVOS_AUX_DIR = os.path.join(os.environ['PYTHONPATH'], 'arquivos/grupo_controle/dados_auxiliares')
+ARQUIVOS_ENTRADA_DIR = os.path.join(os.environ['PYTHONPATH'], 'arquivos/grupo_controle/dados_entrada')
 
 ## Input file
 # Contains true matches between FAPESP researcher set and WoS author set
