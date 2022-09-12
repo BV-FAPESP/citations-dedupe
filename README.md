@@ -27,38 +27,38 @@ Os dados usados correspondem a artigos científicos que fazem referência a um o
 
 A seguir é listada a sequência de arquivos que devem ser executados para obter os dados clusterizados com o Dedupe, bem como os resultados da avaliação do modelo de treinamento:
 
-### 1. grupo_controle/gera_dados_para_grupo_controle.py
+### 1. scripts/gera_dados_para_grupo_controle.py
 
 Organiza e divide os dados do arquivo *'true_matches_pesquisador_autoria.csv'*
 para obter os dados de entrada para o treinamento, predição e teste com o Dedupe.
 
-    __NOTA: Se você quiser usar o código disponibilizado para conjuntos de dados diferentes, 
-    é necessário disponibilizar esse arquivo com as correlações verdadeiras 
-    dos seus conjuntos de dados na pasta 'grupo_controle/arquivos/dados_auxiliares'.
+    __NOTA: Se você quiser usar o código disponibilizado,
+    é necessário disponibilizar esse arquivo com as correlações verdadeiras
+    dos seus conjuntos de dados na pasta 'arquivos/grupo_controle/dados_auxiliares'.
 
 
-Para executar o script, usar o comando: **'python grupo_controle/gera_dados_para_grupo_controle.py'**
+Para executar o script, usar o comando: **'python scripts/gera_dados_para_grupo_controle.py'**
 
-O script gera os seguintes 4 arquivos para trabalhar com o Dedupe, que estarão na pasta *'grupo_controle/arquivos/dados_entrada'*:
+O script gera os seguintes 4 arquivos para trabalhar com o Dedupe, que estarão na pasta *'arquivos/grupo_controle/dados_entrada'*:
 - 'cj_canonico_pesquisadores.csv' (conjunto canônico)
 - 'cj_messy_autorias_para_treinamento.csv' (conjunto messy para o processo de treinamento)
 - 'cj_messy_autorias_para_validacao.csv' (conjunto messy para o processo de validação)
 - 'cj_messy_autorias_para_teste.csv' (conjunto messy para a avaliação do modelo)
 
-### 2. grupo_controle/dedupe_gazetteer_grupo_controle.py
+### 2. src/dedupe_gazetteer.py
 
 - Treina e clusteriza dados do grupo controle
 - Avalia os resultados obtidos com o modelo gerado pelo Dedupe
 - Para executar o script, usar o comando:
-**python grupo_controle/dedupe_gazetteer_grupo_controle.py'**
+**'python tests/integration/main.py'**
 
 O script gera:
 
-2 arquivos com os dados do treinamento, na pasta *'grupo_controle/arquivos/dados_treinamento'*:
+2 arquivos com os dados do treinamento, na pasta *'arquivos/dados_treinamento'*:
    - gazetteer_learned_settings
    - gazetteer_training.json
 
-3 arquivos com os dados de saída da predição para os dados de teste,*na pasta 'grupo_controle/arquivos/dados_saida'*:
+3 arquivos com os dados de saída da predição para os dados de teste,*na pasta 'arquivos/grupo_controle/dados_saida'*:
    - gazetteer_matches_found.csv
    - gazetteer_false_positives.csv
    - gazetteer_false_negatives.csv
@@ -66,9 +66,9 @@ O script gera:
 ### 3. simplifica_resultado_dedupe_gazetteer.py
 Diminui o número de colunas dos arquivos de saída com o script anterior, para ter uma melhor visualização dos resultados obtidos.
 
-Para executar o arquivo, usar o comando: **'python grupo_controle/simplifica_resultado_dedupe_gazetteer.py'**
+Para executar o arquivo, usar o comando: **'python scripts/simplifica_resultado_dedupe_gazetteer.py'**
 
-O script gera os seguintes arquivos na pasta *'grupo_controle/arquivos/dados_saida'*:
+O script gera os seguintes arquivos na pasta *'arquivos/grupo_controle/dados_saida'*:
 - gazetteer_matches_found_simplified.csv
 - gazetteer_false_positives_simplified.csv
 - gazetteer_false_negatives_simplified.csv
