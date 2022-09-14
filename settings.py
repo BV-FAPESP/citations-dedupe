@@ -2,10 +2,12 @@ import os
 
 ################################################################################
 ### Setup
-ARQUIVOS_AUX_DIR = os.path.join(os.environ['PYTHONPATH'],'arquivos/dados_auxiliares')
-ARQUIVOS_ENTRADA_DIR = os.path.join(os.environ['PYTHONPATH'],'arquivos/dados_entrada')
 ARQUIVOS_TREINAMENTO_DIR = os.path.join(os.environ['PYTHONPATH'],'arquivos/dados_treinamento')
-ARQUIVOS_SAIDA_DIR = os.path.join(os.environ['PYTHONPATH'],'arquivos/dados_saida')
+
+## GROUP OF CONTROL
+ARQUIVOS_AUX_DIR = os.path.join(os.environ['PYTHONPATH'],'arquivos/grupo_controle/dados_auxiliares')
+ARQUIVOS_ENTRADA_DIR = os.path.join(os.environ['PYTHONPATH'],'arquivos/grupo_controle/dados_entrada')
+ARQUIVOS_SAIDA_DIR = os.path.join(os.environ['PYTHONPATH'],'arquivos/grupo_controle/dados_saida')
 
 # input files
 ip_canonical_file = os.path.join(ARQUIVOS_ENTRADA_DIR,'cj_canonico_pesquisadores.csv')

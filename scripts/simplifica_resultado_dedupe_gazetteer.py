@@ -1,6 +1,6 @@
 """
 This code reduces the number of columns of the output files obtained from
-running dedupe_gazetteer_grupo_controle.py,
+running dedupe_gazetteer.py,
 to view the results more clearly.
 
 The field names in these files are:
@@ -24,18 +24,14 @@ import collections
 
 from datetime import datetime
 
+from settings import *
 
-ARQUIVOS_SAIDA_DIR = os.path.join(os.environ['PYTHONPATH'], 'arquivos/dados_saida')
-
-# input files
-output_dedupe_file = os.path.join(ARQUIVOS_SAIDA_DIR,'gazetteer_matches_found.csv')
-false_positives_file = os.path.join(ARQUIVOS_SAIDA_DIR,'gazetteer_false_positives.csv')
-false_negatives_file = os.path.join(ARQUIVOS_SAIDA_DIR,'gazetteer_false_negatives.csv')
-
+###########################################################################################################
 # output files
-simple_output_dedupe_file = os.path.join(ARQUIVOS_SAIDA_DIR,'gazetteer_matches_found_simplified.csv')
-simple_false_positives_file = os.path.join(ARQUIVOS_SAIDA_DIR,'gazetteer_false_positives_simplified.csv')
-simple_false_negatives_file = os.path.join(ARQUIVOS_SAIDA_DIR,'gazetteer_false_negatives_simplified.csv')
+op_simple_matches_found_file = os.path.join(ARQUIVOS_SAIDA_DIR,'gazetteer_matches_found_simplified.csv')
+op_simple_false_positives_file = os.path.join(ARQUIVOS_SAIDA_DIR,'gazetteer_false_positives_simplified.csv')
+op_simple_false_negatives_file = os.path.join(ARQUIVOS_SAIDA_DIR,'gazetteer_false_negatives_simplified.csv')
+###########################################################################################################
 
 
 def simplify_save_result(input_file, output_file):
@@ -69,8 +65,8 @@ if __name__ == '__main__':
     end_time = 0
 
     start_time = datetime.now()
-    simplify_save_result(output_dedupe_file, simple_output_dedupe_file)
-    simplify_save_result(false_positives_file, simple_false_positives_file)
-    simplify_save_result(false_negatives_file, simple_false_negatives_file)
+    simplify_save_result(op_matches_found_file, op_simple_matches_found_file)
+    simplify_save_result(op_false_positives_file, op_simple_false_positives_file)
+    simplify_save_result(op_false_negatives_file, op_simple_false_negatives_file)
     end_time = datetime.now()
     print(f"Tempo de Processamento: {end_time - start_time}")
