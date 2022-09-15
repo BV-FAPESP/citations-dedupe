@@ -21,5 +21,6 @@ op_training_file = os.path.join(ARQUIVOS_TREINAMENTO_DIR,'gazetteer_training.jso
 op_matches_found_file = os.path.join(ARQUIVOS_SAIDA_DIR,'gazetteer_matches_found.csv')
 op_false_positives_file = os.path.join(ARQUIVOS_SAIDA_DIR,'gazetteer_false_positives.csv')
 op_false_negatives_file = os.path.join(ARQUIVOS_SAIDA_DIR,'gazetteer_false_negatives.csv')
+op_noisy_test_file = os.path.join(ARQUIVOS_SAIDA_DIR,'noisy_cj_messy_autorias_para_teste.csv')
 
 ################################################################################

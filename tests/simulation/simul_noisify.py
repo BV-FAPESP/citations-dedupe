@@ -50,7 +50,9 @@ def run(variables):
     ### Prediction
     step_time = datetime.now()
     model_evaluation = ModelEvaluation(ip_canonical_file, ip_messy_test_file, op_false_positives_file, op_false_negatives_file)
-    tt = TrainingTest(ip_canonical_file, ip_messy_test_file, op_settings_file, op_matches_found_file, model_evaluation)
+    noisify = Noisify(1, False)
+    tt = TrainingTest(ip_canonical_file, ip_messy_test_file, op_settings_file, op_matches_found_file, model_evaluation, noisify)
+    tt.noisify()
     tt.cluster_data()
     end_time = datetime.now()
     print(f"Prediction Time and File Recording Time: {end_time - step_time} \n")
