@@ -13,6 +13,8 @@ from src.generic_utils import *
 from src.dedupe_gazetteer_utils import (readData,getTrainingData, getTrueMatchesSet,
                                         getDiceCoefficient, evaluateMatches, readDataToSaveResults)
 
+from settings import *
+
 
 class TrainingElement:
     def __init__(self, op_training_file: str, variables: list):
@@ -257,7 +259,7 @@ class Noisify():
                                       if c == ' ' or c == '.' or c == ',']
         noise_indices = []
         for i in range(number_of_characters):
-            noise_indices.append(random.choice([i for i in range(0,len(name))
+            noise_indices.append(random.choice([i for i in range(1,len(name))
                                                 if i not in special_characters_indices]))
         s = list(name)
         for noise in noise_indices:
@@ -266,10 +268,11 @@ class Noisify():
         return ''.join(s)
 
     def get_noisy_data(self, data):
-        data['nome'] = data['nome'].apply(lambda x: self.add_noise(x))
-        data['primeiro_nome'] = data['nome'].apply(lambda x: getLongFirstName(remover_acentos(x)))
-        data['abr'] = data['nome'].apply(lambda x: getPartialAbbreviation(remover_acentos(x)))
-        data['ult_sobrenome'] = data['nome'].apply(lambda x: getLastName(remover_acentos(x)))
+        for key in data:
+            data[key]['nome'] = self.add_noise(data[key]['nome'])
+            data[key]['primeiro_nome'] = getLongFirstName(remover_acentos(data[key]['nome']))
+            data[key]['abr'] = getPartialAbbreviation(remover_acentos(data[key]['nome']))
+            data[key]['ult_sobrenome'] = getLastName(remover_acentos(data[key]['nome']))
 
         return data
 
@@ -420,5 +423,4 @@ class TrainingTest(IPredict):
         self.model_evaluation.save_false_negatives()
 
     def noisify(self):
-        noisy_data = self.noisify_o.get_noisy_data(self.messy_test_d)
-        return noisy_data
+        self.messy_test_d = self.noisify_o.get_noisy_data(self.messy_test_d)
