@@ -125,7 +125,7 @@ class TrainingProcess:
                     dc = getDiceCoefficient(gazetteer_obj=trained_element.gazetteer, canonical_d=canonical_d, validation_d=messy_validation_d)
                     trained_element.training_performance(dc)
 
-                    if trained_element >= best_trained_element:
+                    if trained_element.performance > best_trained_element.performance:
                         print(f'[Validation] Dice Coefient (new): {trained_element}')
                         best_trained_element = copy.deepcopy(trained_element)
                         best_trained_element.write_training(self.op_training_file)
@@ -140,6 +140,7 @@ class TrainingProcess:
                     pass
 
             trained_element.cleanup_training()
+            del trained_element
             i += 1
 
         # Write a settings file containing the best data model and predicates.
