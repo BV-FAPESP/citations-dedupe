@@ -17,33 +17,51 @@ from settings import *
 
 
 class TrainingElement:
-    def __init__(self, op_training_file: str, variables: list):
+    def __init__(self, variables: list):
         self.gazetteer = dedupe.Gazetteer(variables)
-        self.op_training_file = op_training_file
         self.performance = None
 
-    def prepare_training(self, labeled_messy_d: dict, labeled_canonical_d: dict, op_training_file: str=None, sample_size: int=None):
+    def prepare_training(self, labeled_messy_d: dict, labeled_canonical_d: dict, op_training_file: str=None, sample_size: int=1500):
         """ Pre training required """
         self.labeled_messy_d = labeled_messy_d
         self.labeled_canonical_d = labeled_canonical_d
         if op_training_file:
-            self.gazetteer.prepare_training(self.labeled_messy_d, self.labeled_canonical_d, training_file=op_training_file)
-        elif sample_size:
-            self.gazetteer.prepare_training(self.labeled_messy_d, self.labeled_canonical_d, sample_size=sample_size)
+            print('Reading labeled examples from ', op_training_file)
+            try:
+                with open(op_training_file) as tf:
+                    self.gazetteer.prepare_training(self.labeled_messy_d,self.labeled_canonical_d,training_file=tf)
+            except IOError:
+                raise
+        else:
+            self.gazetteer.prepare_training(self.labeled_messy_d,
+                                            self.labeled_canonical_d,
+                                            sample_size=sample_size)
 
     def model_training(self):
         """ Mark pairs for already labeled data and train """
         print('Starting labeling and train the model...')
         n_distinct_pairs = len(self.labeled_messy_d)
-        labeled_pairs = dedupe.training_data_link(self.labeled_messy_d, self.labeled_canonical_d, 'link_id', training_size=n_distinct_pairs)
+        labeled_pairs = dedupe.training_data_link(self.labeled_messy_d,
+                                                  self.labeled_canonical_d,
+                                                  common_key='link_id',
+                                                  training_size=n_distinct_pairs)
         self.gazetteer.mark_pairs(labeled_pairs)
         self.gazetteer.train()
 
-    def write_training(self):
+    def write_training(self, op_training_file:str):
         """ When finished, save the training away to disk
         Write a JSON file that contains labeled examples (pairs) """
-        with open(self.op_training_file, 'w') as tf:
+        with open(op_training_file, 'w') as tf:
             self.gazetteer.write_training(tf)
+
+    def write_settings(self, op_settings_file:str):
+        """ Save the weights and predicates to disk"""
+        with open(op_settings_file, 'wb') as sf:
+            self.gazetteer.write_settings(sf) # Write a settings file containing the data model and predicates.
+
+    def cleanup_training(self):
+        """ Clean up data we used for training. Free up memory. """
+        self.gazetteer.cleanup_training()
 
     def training_performance(self, value):
         self.performance = value
@@ -56,10 +74,9 @@ class TrainingElement:
 
 
 class TrainingProcess:
-    def __init__(self, ip_canonical_file: str, op_settings_file: str, op_training_file: str, training_element: TrainingElement) -> None:
+    def __init__(self, op_settings_file: str, op_training_file: str, training_element: TrainingElement) -> None:
         self.op_settings_file = op_settings_file
         self.op_training_file = op_training_file
-        self.canonical_d = readData(ip_canonical_file)
         self.training_element = training_element
 
         # Always remove settings and training files on __init__
@@ -69,15 +86,19 @@ class TrainingProcess:
         except FileNotFoundError:
             pass
 
-    def training(self, ip_messy_training_file: str, ip_messy_validation_file: str, sample_size: int=1000):
+    def training(self,ip_canonical_file, ip_messy_training_file: str, ip_messy_validation_file: str, sample_size: int=1000):
         # Reading data
+        canonical_d = readData(ip_canonical_file)
+        print(f"Number of records from canonical data (pesquisadores unicos): {len(canonical_d)}")
+
         messy_training_d = readData(ip_messy_training_file)
         messy_validation_d = readData(ip_messy_validation_file)
-        labeled_pair_groups_list = getTrainingData(messy_d=messy_training_d, canonical_d=self.canonical_d,  sample_size=sample_size)
+        labeled_pair_groups_list = getTrainingData(messy_d=messy_training_d, canonical_d=canonical_d,  sample_size=sample_size)
         print(f"Number of records from messy data for validation (autorias): {len(messy_validation_d)}")
         print(f"Number of labeled pair groups: {len(labeled_pair_groups_list)}")
         print("\n[TRAINING PROCESS]")
-        trained_element = self.training_element
+        trained_element = copy.deepcopy(self.training_element)
+        best_trained_element = None
 
         i = 0
         stop = False
@@ -90,44 +111,42 @@ class TrainingProcess:
             if i == 0:
                 trained_element.prepare_training(labeled_messy_d, labeled_canonical_d, sample_size=150000)
                 trained_element.model_training()
-                trained_element.write_training()
+                trained_element.write_training(self.op_training_file)
 
-                dc = getDiceCoefficient(gazetteer_obj=trained_element.gazetteer, canonical_d=self.canonical_d, validation_d=messy_validation_d)
+                dc = getDiceCoefficient(gazetteer_obj=trained_element.gazetteer, canonical_d=canonical_d, validation_d=messy_validation_d)
                 trained_element.training_performance(dc)
                 print(f'[Validation] Dice Coefient: {trained_element}')
+                best_trained_element = copy.deepcopy(trained_element)
             else:
                 try:
-                    with open(self.op_training_file) as tf:
-                        print('Reading labeled examples from ', self.op_training_file)
-                        trained_element.prepare_training(labeled_messy_d, labeled_canonical_d, op_training_file=tf)
-                        trained_element.model_training()
-                except IOError:
-                    raise
-
-                try:
-                    dc = getDiceCoefficient(gazetteer_obj=trained_element.gazetteer, canonical_d=self.canonical_d, validation_d=messy_validation_d)
+                    trained_element = copy.deepcopy(self.training_element)
+                    trained_element.prepare_training(labeled_messy_d, labeled_canonical_d, op_training_file=self.op_training_file)
+                    trained_element.model_training()
+                    dc = getDiceCoefficient(gazetteer_obj=trained_element.gazetteer, canonical_d=canonical_d, validation_d=messy_validation_d)
                     trained_element.training_performance(dc)
 
-                    if trained_element >= former_trained_element:
+                    if trained_element >= best_trained_element:
                         print(f'[Validation] Dice Coefient (new): {trained_element}')
-                        trained_element.write_training()
+                        best_trained_element = copy.deepcopy(trained_element)
+                        best_trained_element.write_training(self.op_training_file)
                     else:
                         stop = True
-                        print(f'[Validation] Dice Coefient (old): {former_trained_element}')
+                        print(f'[Validation] Dice Coefient (best): {best_trained_element}')
                         print(f'[Validation] Dice Coefient (new): {trained_element}')
                         print('Stopping...')
                 except Exception as e:
-                    raise
+                    print("An exception occurred: ",e)
+                    stop = True
+                    pass
 
+            trained_element.cleanup_training()
             i += 1
-            former_trained_element = copy.deepcopy(trained_element)
 
-        ### Save the weights and predicates to disk.
-        with open(self.op_settings_file, 'wb') as sf:
-            trained_element.gazetteer.write_settings(sf) # Write a settings file containing the data model and predicates.
+        # Write a settings file containing the best data model and predicates.
+        best_trained_element.write_settings(self.op_settings_file)
 
-        ### Clean up data we used for training. Free up memory.
-        trained_element.gazetteer.cleanup_training()
+        # Clean up data we used for training
+        best_trained_element.cleanup_training()
 
         print('=================================================================')
 

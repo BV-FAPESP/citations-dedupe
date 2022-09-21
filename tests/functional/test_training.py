@@ -39,11 +39,11 @@ class TestTrainingProcess(unittest.TestCase):
                         {'field': 'abr', 'type':'ShortString'},
                         {'field': 'ult_sobrenome', 'type': 'Exact'}
                     ]
-        self.training_element = gc.TrainingElement(op_training_file, VARIABLES)
+        self.training_element = gc.TrainingElement(VARIABLES)
 
     def test_init(self):
         """ Test TrainingProcess __init__ method """
-        training_process = gc.TrainingProcess(ip_canonical_file, op_settings_file, op_training_file, training_element = self.training_element)
+        training_process = gc.TrainingProcess(op_settings_file, op_training_file, training_element = self.training_element)
         self.assertIsInstance(training_process, gc.TrainingProcess)
 
     def test_get_training_data(self):
@@ -76,7 +76,7 @@ class TestTrainingElement(unittest.TestCase):
                         {'field': 'abr', 'type':'ShortString'},
                         {'field': 'ult_sobrenome', 'type': 'Exact'}
                     ]
-        self.training_element = gc.TrainingElement(op_training_file, VARIABLES)
+        self.training_element = gc.TrainingElement(VARIABLES)
         self.canonical_d = du.readData(ip_canonical_file)
         self.messy_training_d = du.readData(ip_messy_training_file)
         self.sample_size = 1000
@@ -164,7 +164,7 @@ class TestTrainingElement(unittest.TestCase):
 
     def step4_write_training(self):
         print('\n\nWRITE TRAINING')
-        self.training_element.write_training()
+        self.training_element.write_training(op_training_file)
         print(f'Training file has been writen: {op_training_file}')
 
     def _steps(self):
