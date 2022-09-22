@@ -21,14 +21,14 @@ class TrainingElement:
         self.gazetteer = dedupe.Gazetteer(variables)
         self.performance = None
 
-    def prepare_training(self, labeled_messy_d: dict, labeled_canonical_d: dict, op_training_file: str=None, sample_size: int=1500):
+    def prepare_training(self, labeled_messy_d: dict, labeled_canonical_d: dict, training_file: str=None, sample_size: int=1500):
         """ Pre training required """
         self.labeled_messy_d = labeled_messy_d
         self.labeled_canonical_d = labeled_canonical_d
-        if op_training_file:
-            print('Reading labeled examples from ', op_training_file)
+        if training_file:
+            print('Reading labeled examples from ', training_file)
             try:
-                with open(op_training_file) as tf:
+                with open(training_file) as tf:
                     self.gazetteer.prepare_training(self.labeled_messy_d,self.labeled_canonical_d,training_file=tf)
             except IOError:
                 raise
@@ -86,14 +86,14 @@ class TrainingProcess:
         except FileNotFoundError:
             pass
 
-    def training(self,ip_canonical_file, ip_messy_training_file: str, ip_messy_validation_file: str, sample_size: int=1000):
+    def training(self, ip_canonical_file, ip_messy_training_file: str, ip_messy_validation_file: str, labeled_sample_size: int=1000):
         # Reading data
         canonical_d = readData(ip_canonical_file)
         print(f"Number of records from canonical data (pesquisadores unicos): {len(canonical_d)}")
 
         messy_training_d = readData(ip_messy_training_file)
         messy_validation_d = readData(ip_messy_validation_file)
-        labeled_pair_groups_list = getTrainingData(messy_d=messy_training_d, canonical_d=canonical_d,  sample_size=sample_size)
+        labeled_pair_groups_list = getTrainingData(messy_d=messy_training_d, canonical_d=canonical_d,  sample_size=labeled_sample_size)
         print(f"Number of records from messy data for validation (autorias): {len(messy_validation_d)}")
         print(f"Number of labeled pair groups: {len(labeled_pair_groups_list)}")
         print("\n[TRAINING PROCESS]")

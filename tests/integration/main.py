@@ -69,7 +69,7 @@ if __name__ == '__main__':
     """
     tp = TrainingProcess(op_settings_file, op_training_file, training_element)
     step_time = datetime.now()
-    tp.training(ip_canonical_file, ip_messy_training_file, ip_messy_validation_file, sample_size = 1000)
+    tp.training(ip_canonical_file, ip_messy_training_file, ip_messy_validation_file, labeled_sample_size = 1000)
     end_time = datetime.now()
     print(f"Training Time: {end_time - step_time} \n")
     ###
