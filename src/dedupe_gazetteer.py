@@ -92,10 +92,11 @@ class TrainingProcess:
         print(f"Number of records from canonical data (pesquisadores unicos): {len(canonical_d)}")
 
         messy_training_d = readData(ip_messy_training_file)
+        print(f"Number of records from messy data for training (autorias): {len(messy_training_d)}")
         messy_validation_d = readData(ip_messy_validation_file)
         labeled_pair_groups_list = getTrainingData(messy_d=messy_training_d, canonical_d=canonical_d,  sample_size=labeled_sample_size)
         print(f"Number of records from messy data for validation (autorias): {len(messy_validation_d)}")
-        print(f"Number of labeled pair groups: {len(labeled_pair_groups_list)}")
+        print(f"Number of labeled pair groups for training: {len(labeled_pair_groups_list)}")
         print("\n[TRAINING PROCESS]")
         trained_element = copy.deepcopy(self.training_element)
         best_trained_element = None
@@ -120,7 +121,7 @@ class TrainingProcess:
             else:
                 try:
                     trained_element = copy.deepcopy(self.training_element)
-                    trained_element.prepare_training(labeled_messy_d, labeled_canonical_d, op_training_file=self.op_training_file)
+                    trained_element.prepare_training(labeled_messy_d, labeled_canonical_d, training_file=self.op_training_file)
                     trained_element.model_training()
                     dc = getDiceCoefficient(gazetteer_obj=trained_element.gazetteer, canonical_d=canonical_d, validation_d=messy_validation_d)
                     trained_element.training_performance(dc)
