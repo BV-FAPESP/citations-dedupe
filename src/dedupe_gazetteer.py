@@ -130,8 +130,6 @@ class TrainingProcess:
                         best_trained_element = copy.deepcopy(trained_element)
                         best_trained_element.write_training(self.op_training_file)
                     else:
-                        # Recover the last good trained element to write the settings file
-                        trained_element = copy.deepcopy(former_trained_element)
                         stop = True
                         print(f'[Validation] Dice Coefient (best): {best_trained_element}')
                         print(f'[Validation] Dice Coefient (new): {trained_element}')
