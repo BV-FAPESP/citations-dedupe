@@ -48,7 +48,7 @@ if __name__ == '__main__':
 
     ### Training
 
-    ### Variables Definition
+    ## Variables Definition
     # Define the fields the gazetteer will pay attention to, by creating
     # a list of dictionaries describing the variables will be used for training a model.
     # Note that a variable definition describes the records that you want to match, and
@@ -61,18 +61,15 @@ if __name__ == '__main__':
                     {'field': 'ult_sobrenome', 'type': 'Exact'}
                 ]
 
-    training_element = TrainingElement(op_training_file, VARIABLES)
+    training_element = TrainingElement(VARIABLES)
 
     """
-    Skipt training with you have already trained otherwhise it will delete your trained and settings file,
-    and train again.
+    Skip training if you have already trained, otherwise
+    it will delete your trained and settings files, and train again.
     """
-    tp = TrainingProcess(ip_canonical_file, op_settings_file, op_training_file, training_element)
-    print(f"Number of records from canonical data (pesquisadores unicos): {len(tp.canonical_d)}")
-
-    sample_size = 1000
+    tp = TrainingProcess(op_settings_file, op_training_file, training_element)
     step_time = datetime.now()
-    tp.training(ip_messy_training_file, ip_messy_validation_file, sample_size = 1000)
+    tp.training(ip_canonical_file, ip_messy_training_file, ip_messy_validation_file, labeled_sample_size = 1000)
     end_time = datetime.now()
     print(f"Training Time: {end_time - step_time} \n")
     ###
