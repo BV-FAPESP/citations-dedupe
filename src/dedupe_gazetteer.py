@@ -69,6 +69,9 @@ class TrainingElement:
     def __ge__(self, other):
         return self.performance >= other.performance
 
+    def __gt__(self, other):
+        return self.performance > other.performance
+
     def __str__(self):
         return str(round(self.performance, 4))
 
@@ -126,7 +129,7 @@ class TrainingProcess:
                     dc = getDiceCoefficient(gazetteer_obj=trained_element.gazetteer, canonical_d=canonical_d, validation_d=messy_validation_d)
                     trained_element.training_performance(dc)
 
-                    if trained_element.performance > best_trained_element.performance:
+                    if trained_element > best_trained_element:
                         print(f'[Validation] Dice Coefient (new): {trained_element}')
                         best_trained_element = copy.deepcopy(trained_element)
                         best_trained_element.write_training(self.op_training_file)
