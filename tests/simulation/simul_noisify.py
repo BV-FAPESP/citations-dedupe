@@ -6,7 +6,6 @@ It is not a TEST file, it is a sample file to run the algorithm.
 """
 
 import pdb
-from typing import OrderedDict
 from src.dedupe_gazetteer import *
 from src.dedupe_gazetteer_utils import *
 
@@ -106,5 +105,3 @@ if __name__ == '__main__':
         print(simulation['description'])
         run(simulation['variables'])
         print ('#############################################\n')
-
-
