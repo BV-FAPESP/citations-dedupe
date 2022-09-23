@@ -10,7 +10,7 @@ import math
 from abc import ABC, abstractmethod
 from src.generic_utils import *
 
-from src.dedupe_gazetteer_utils import (readData,getTrainingData, getTrueMatchesSet,
+from src.dedupe_gazetteer_utils import (preProcess,readData,getTrainingData, getTrueMatchesSet,
                                         getDiceCoefficient, evaluateMatches, readDataToSaveResults)
 
 from settings import *
@@ -266,7 +266,7 @@ class ModelEvaluation():
                     writer.writerow(messy_record_row)
 
 
-class Noisify():
+class Noisify:
     """
         Generates data augmentation adding noise based on percentual or number of characters.
     """
@@ -293,10 +293,10 @@ class Noisify():
 
     def get_noisy_data(self, data):
         for key in data:
-            data[key]['nome'] = self.add_noise(data[key]['nome'])
-            data[key]['primeiro_nome'] = getLongFirstName(remover_acentos(data[key]['nome']))
-            data[key]['abr'] = getPartialAbbreviation(remover_acentos(data[key]['nome']))
-            data[key]['ult_sobrenome'] = getLastName(remover_acentos(data[key]['nome']))
+            data[key]['nome'] = preProcess(self.add_noise(data[key]['nome']))
+            data[key]['primeiro_nome'] = preProcess(getLongFirstName(data[key]['nome']))
+            data[key]['abr'] = preProcess(getPartialAbbreviation(data[key]['nome']))
+            data[key]['ult_sobrenome'] = preProcess(getLastName(data[key]['nome']))
 
         return data
 
