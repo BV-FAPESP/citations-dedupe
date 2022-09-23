@@ -25,17 +25,17 @@ from settings import *
 
 
 def train(variables):
-    training_element = TrainingElement(op_training_file, variables)
+    training_element = TrainingElement(variables)
     """
     Skipt training with you have already trained otherwhise it will delete your trained and settings file,
     and train again.
     """
-    tp = TrainingProcess(ip_canonical_file, op_settings_file, op_training_file, training_element)
-    print(f"Number of records from canonical data (pesquisadores unicos): {len(tp.canonical_d)}")
+    tp = TrainingProcess(op_settings_file, op_training_file, training_element)
+    print(f"Number of records from canonical data (pesquisadores unicos): NEED TO ACCESS canonical_d")
 
     sample_size = 1000
     step_time = datetime.now()
-    tp.training(ip_messy_training_file, ip_messy_validation_file, sample_size = 1000)
+    tp.training(ip_canonical_file, ip_messy_training_file, ip_messy_validation_file, labeled_sample_size = 1000)
     end_time = datetime.now()
     print(f"Training Time: {end_time - step_time} \n")
 
