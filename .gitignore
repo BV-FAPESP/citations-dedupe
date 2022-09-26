@@ -11,6 +11,7 @@ arquivos/dados_treinamento/*
 *.bkp
 .vscode/
 
+
 backup/
 
 # Pastas a manter
@@ -21,6 +22,8 @@ backup/
 !arquivos/grupo_aplicacao/dados_auxiliares/.gitkeep
 !arquivos/grupo_aplicacao/dados_entrada/.gitkeep
 !arquivos/grupo_aplicacao/dados_saida/.gitkeep
+
+!requirements.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -151,6 +154,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+dedupenv/
 
 # Spyder project settings
 .spyderproject
