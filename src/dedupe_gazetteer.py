@@ -75,6 +75,49 @@ class TrainingElement:
     def __str__(self):
         return str(round(self.performance, 4))
 
+class Noisify:
+    """
+        Generates data augmentation adding noise based on percentual or number of characters.
+    """
+    def __init__(self, amount, percentual=True, data_noise_per:int = 100):
+        self.amount = amount
+        self.percentual = percentual # if not true, amount is treated as number of characters
+        self.data_noise_per = data_noise_per
+
+    def add_noise(self, name):
+        if self.percentual:
+            number_of_characters = math.ceil(((len(name)*self.amount/100)))
+        else:
+            number_of_characters = self.amount
+        special_characters_indices = [i for i, c in enumerate(name)
+                                      if c == ' ' or c == '.' or c == ',']
+        noise_indices = []
+        for i in range(number_of_characters):
+            noise_indices.append(random.choice([i for i in range(1,len(name))
+                                                if i not in special_characters_indices]))
+        s = list(name)
+        for noise in noise_indices:
+            s[noise] = random.choice(string.ascii_letters)
+
+        return ''.join(s)
+
+    def get_noisy_data(self, data):
+        noisy_data_keys = []
+        if self.data_noise_per > 0:
+            noisy_data_size = int(self.data_noise_per/100 * len(data))
+            keys_list = [record_id for record_id in data.keys()]
+            random.seed(3)
+            noisy_data_keys = random.sample(keys_list,noisy_data_size)
+
+        if noisy_data_keys:
+            for key in data:
+                if key in noisy_data_keys:
+                    data[key]['nome'] = preProcess(self.add_noise(data[key]['nome']))
+                    data[key]['primeiro_nome'] = preProcess(getLongFirstName(data[key]['nome']))
+                    data[key]['abr'] = preProcess(getPartialAbbreviation(data[key]['nome']))
+                    data[key]['ult_sobrenome'] = preProcess(getLastName(data[key]['nome']))
+
+        return data
 
 class TrainingProcess:
     def __init__(self, op_settings_file: str, op_training_file: str, training_element: TrainingElement) -> None:
@@ -89,13 +132,17 @@ class TrainingProcess:
         except FileNotFoundError:
             pass
 
-    def training(self, ip_canonical_file, ip_messy_training_file: str, ip_messy_validation_file: str, labeled_sample_size: int=1000):
+    def training(self, ip_canonical_file, ip_messy_training_file: str, ip_messy_validation_file: str,
+                 labeled_sample_size: int=1000, noisify: Noisify=None):
         # Reading data
         canonical_d = readData(ip_canonical_file)
         print(f"Number of records from canonical data (pesquisadores unicos): {len(canonical_d)}")
 
         messy_training_d = readData(ip_messy_training_file)
         print(f"Number of records from messy data for training (autorias): {len(messy_training_d)}")
+        if noisify:
+            messy_training_d = noisify.get_noisy_data(messy_training_d)
+
         messy_validation_d = readData(ip_messy_validation_file)
         labeled_pair_groups_list = getTrainingData(messy_d=messy_training_d, canonical_d=canonical_d,  sample_size=labeled_sample_size)
         print(f"Number of records from messy data for validation (autorias): {len(messy_validation_d)}")
@@ -266,39 +313,6 @@ class ModelEvaluation():
                     writer.writerow(messy_record_row)
 
 
-class Noisify:
-    """
-        Generates data augmentation adding noise based on percentual or number of characters.
-    """
-    def __init__(self, amount, percentual=True):
-        self.amount = amount
-        self.percentual = percentual # if not true, amount is treated as number of characters
-
-    def add_noise(self, name):
-        if self.percentual:
-            number_of_characters = math.ceil(((len(name)*self.amount/100)))
-        else:
-            number_of_characters = self.amount
-        special_characters_indices = [i for i, c in enumerate(name)
-                                      if c == ' ' or c == '.' or c == ',']
-        noise_indices = []
-        for i in range(number_of_characters):
-            noise_indices.append(random.choice([i for i in range(1,len(name))
-                                                if i not in special_characters_indices]))
-        s = list(name)
-        for noise in noise_indices:
-            s[noise] = random.choice(string.ascii_letters)
-
-        return ''.join(s)
-
-    def get_noisy_data(self, data):
-        for key in data:
-            data[key]['nome'] = preProcess(self.add_noise(data[key]['nome']))
-            data[key]['primeiro_nome'] = preProcess(getLongFirstName(data[key]['nome']))
-            data[key]['abr'] = preProcess(getPartialAbbreviation(data[key]['nome']))
-            data[key]['ult_sobrenome'] = preProcess(getLastName(data[key]['nome']))
-
-        return data
 
 
 class IPredict(ABC):
@@ -345,7 +359,7 @@ class IPredict(ABC):
         self.cluster_membership = cluster_membership
         self.save_prediction_result()
 
-
+        del gazetteer
 
 class ProductionPredict(IPredict):
     """ Classication or Bloking Process """
