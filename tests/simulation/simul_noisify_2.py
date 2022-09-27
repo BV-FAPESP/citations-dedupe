@@ -31,9 +31,6 @@ def train(variables):
     and train again.
     """
     tp = TrainingProcess(op_settings_file, op_training_file, training_element)
-    print(f"Number of records from canonical data (pesquisadores unicos): NEED TO ACCESS canonical_d")
-
-    sample_size = 1000
     step_time = datetime.now()
     tp.training(ip_canonical_file, ip_messy_training_file, ip_messy_validation_file, labeled_sample_size = 1000)
     end_time = datetime.now()
@@ -65,9 +62,6 @@ def predict(noise):
 
     print(f'Total Processing Time: {end_time - start_time}')
 
-
-
-
 def build_variables():
     primeiro_nome = ['Exact', 'String']
     ultimo_sobrenome = ['Exact', 'String']
@@ -85,21 +79,21 @@ def build_simulation():
     combs = len(variables) * len(noises)
     simul_num = 1
 
-    for idx_var, variable in enumerate(variables):
+    for variable in variables:
         variables_desc = f" Training (Change Variables): \n\t Primeiro nome: {variable[0]} \n\t Último sobrenome: {variable[1]}"
-        variables = [
+        variablez = [
                             {'field': 'nome', 'type': 'String'},
                             {'field': 'primeiro_nome', 'type': variable[0], 'has missing': True},
                             {'field': 'abr', 'type':'ShortString'},
                             {'field': 'ult_sobrenome', 'type': variable[1]},
         ]
-        for idx_noise, noise in enumerate(noises):
+        for noise in noises:
             noise_desc = f" Prediction (Add Noise): \n\t Noise Level: {noise[0]} \n\t Abs_Percent: {noise[1]}"
             noise = (noise[0], noise[1])
             simulations.append({'simul_name': f'Simulation #{simul_num} of {combs}',
                                 'training_id': f'{variable[0]} - {variable[1]}',
                                 'training_descricao':variables_desc,
-                                'variables':variables,
+                                'variables':variablez,
                                 'predict_descricao':noise_desc,
                                 'noise': noise})
             simul_num += 1
