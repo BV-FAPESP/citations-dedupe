@@ -1,3 +1,4 @@
+import pdb
 from random import sample
 
 import os, csv, copy
@@ -181,7 +182,13 @@ class ModelEvaluation():
         self.false_positives_s = found_matches_s.difference(true_positives_s)
         self.false_negatives_s = true_matches_s.difference(found_matches_s)
 
-
+        self.qt_true_positives = len([*true_positives_s, ])
+        self.qt_false_positives = len([*self.false_positives_s])
+        self.qt_false_negatives = len([*self.false_negatives_s])
+        self.qt_true_negatives = (n_messy_test * n_canonical) - self.qt_true_positives - self.qt_false_positives - self.qt_false_negatives
+        self.accuracy = (self.qt_true_positives + self.qt_true_negatives) / (self.qt_true_positives + self.qt_false_positives + self.qt_false_negatives + self.qt_true_negatives)
+        self.precision = self.qt_true_positives / (self.qt_true_positives + self.qt_false_positives)
+        self.recall = self.qt_true_positives / (self.qt_true_positives + self.qt_false_negatives)
 
     def save_false_positives(self, messy_matches, cluster_membership):
         ### salvando informacao obtida da clusterizacao
@@ -328,7 +335,6 @@ class IPredict(ABC):
                 messy_matches[messy_record_id][canon_record_id] = score
                 found_pair = (messy_record_id, canon_record_id)
                 found_matches_s.add(frozenset(found_pair))
-
 
         cluster_membership = {}
         cluster_id = 0
