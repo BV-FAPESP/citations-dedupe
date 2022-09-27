@@ -37,7 +37,6 @@ NOTE: If you want to use our code with another dataset,
 import os, sys, random, csv
 import collections
 from datetime import datetime
-
 from src.generic_utils import (remover_acentos,getLongFirstName, getLastName, getPartialAbbreviation,
                             countRows, csvDictWriter, csvDictReaderGenerator)
 
