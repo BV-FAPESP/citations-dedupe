@@ -7,7 +7,7 @@ were obtained from https://github.com/dedupeio/dedupe-examples
 """
 
 
-import csv, re, os
+import csv, re, os, copy
 import collections
 import dedupe
 
@@ -124,11 +124,11 @@ def getDiceCoefficient(gazetteer_obj, canonical_d, validation_d):
     Computes the Dice Coefficient to the result obtained from
     the prediction process for the validation messy set (validation_d).
     """
-
+    gazetteer = copy.deepcopy(gazetteer_obj)
     # get matches
     print('Validation process...')
-    gazetteer_obj.index(canonical_d)
-    results = gazetteer_obj.search(validation_d, threshold=0.5, n_matches=1, generator=True)
+    gazetteer.index(canonical_d)
+    results = gazetteer.search(validation_d, threshold=0.5, n_matches=1, generator=True)
 
     messy_matches = collections.defaultdict(dict) # dicionario cujos valores sao dicionarios
     found_matches_s = set()
@@ -136,6 +136,8 @@ def getDiceCoefficient(gazetteer_obj, canonical_d, validation_d):
         for canon_record_id, score in matches:
             pair = (messy_record_id, canon_record_id)
             found_matches_s.add(frozenset(pair))
+
+    del gazetteer
 
     true_matches_s = getTrueMatchesSet(canonical_d, validation_d)
 
