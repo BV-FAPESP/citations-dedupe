@@ -182,9 +182,10 @@ class TrainingProcess:
                         best_trained_element = copy.deepcopy(trained_element)
                         best_trained_element.write_training(self.op_training_file)
                     else:
+                        stop = True
                         print(f'[Validation] Dice Coefient (best): {best_trained_element}')
                         print(f'[Validation] Dice Coefient (current): {trained_element}')
-                        print('Continue...')
+                        print('Stopping...')
                 except Exception as e:
                     print("An exception occurred: ",e)
                     stop = True
