@@ -11,6 +11,7 @@ arquivos/dados_treinamento/*
 *.bkp
 .vscode/
 
+!tests/simulation/notebooks/*.ipynb
 
 backup/
 
