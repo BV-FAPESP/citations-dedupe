@@ -40,18 +40,21 @@ def train(noise):
     tp = TrainingProcess(op_settings_file, op_training_file, training_element)
     start_time = datetime.now()
     labeled_sample_size = 1000
-    noisify = Noisify(noise[0], noise[1], noise[2])
+    noisify = Noisify(1, False, 50)
     tp.training(ip_canonical_file, ip_messy_training_file, ip_messy_validation_file, labeled_sample_size, noisify)
     end_time = datetime.now()
     print(f"Training Time: {end_time - start_time} \n")
 
 
-def predict():
+def predict(noise):
     start_time = datetime.now()
 
     ### Prediction
     model_evaluation = ModelEvaluation(ip_canonical_file, ip_messy_test_file, op_false_positives_file, op_false_negatives_file)
-    tt = TrainingTest(ip_canonical_file, ip_messy_test_file, op_settings_file, op_matches_found_file, model_evaluation)
+    noisify = Noisify(1, False, 100)
+
+    tt = TrainingTest(ip_canonical_file, ip_messy_test_file, op_settings_file, op_matches_found_file, model_evaluation,noisify)
+    tt.noisify()
     tt.cluster_data()
     end_time = datetime.now()
     print(f"Prediction Time and File Recording Time: {end_time - start_time} \n")
@@ -67,19 +70,25 @@ def predict():
 def build_noise():
     ruido = [1]
     abs_percent = [False]
-    data_noise_per = [0,10,20,50,100]
+    data_noise_per = [50,100]
     return list(itertools.product(ruido, abs_percent,data_noise_per))
 
 
 if __name__ == '__main__':
 
     noises = build_noise()
-    for noise in noises:
-        print ('\n#############################################\n\n')
-        print(f'Training with Noise: {noise}')
-        start_time = datetime.now()
-        train(noise)
-        predict()
-        end_time = datetime.now()
-        print(f'Total Processing Time: {end_time - start_time}')
-        print ('\n\n#############################################\n')
+
+    train(noises[0])
+    predict(noises[0])
+
+
+    # noises = build_noise()
+    # for noise in noises:
+    #     print ('\n#############################################\n\n')
+    #     print(f'Training with Noise: {noise}')
+    #     start_time = datetime.now()
+    #     train(noise)
+    #     predict(noise)
+    #     end_time = datetime.now()
+    #     print(f'Total Processing Time: {end_time - start_time}')
+    #     print ('\n\n#############################################\n')

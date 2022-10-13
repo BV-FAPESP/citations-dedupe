@@ -1,3 +1,4 @@
+
 """
 
 You can build your own, to simulate and test your data.
@@ -5,12 +6,12 @@ You can build your own, to simulate and test your data.
 It is not a TEST file, it is a sample file to run the algorithm.
 """
 import sys
-new_path = r'/home/robson/projetos/citations-dedupe/'
+new_path = r'/home/rmoriya/projetos/citations-dedupe/'
 sys.path.append(new_path)
 
 print(sys.path)
 import pdb
-from typing import OrderedDict
+#from typing import OrderedDict
 from xmlrpc.client import boolean
 from src.dedupe_gazetteer import *
 from src.dedupe_gazetteer_utils import *
@@ -37,8 +38,8 @@ def train(variables, noise):
     Skipt training with you have already trained otherwhise it will delete your trained and settings file,
     and train again.
     """
-    labeled_sample_size = 1000
-    tp = TrainingProcess(op_settings_file, op_training_file, training_element)
+    labeled_sample_size = 1000    
+    tp = TrainingProcess(op_settings_file, op_training_file, training_element)    
     noisify = Noisify(noise[0], noise[1], noise[2])
     tp.training(ip_canonical_file, ip_messy_training_file, ip_messy_validation_file, labeled_sample_size, noisify)
 
@@ -48,7 +49,7 @@ def predict(noise):
     noisify = Noisify(noise[0], noise[1], noise[2])
     tt = TrainingTest(ip_canonical_file, ip_messy_test_file, op_settings_file, op_matches_found_file, model_evaluation, noisify)
     tt.noisify()
-    tt.cluster_data()
+    tt.cluster_data()    
     ###
 
     ### Performance of the algorithm
@@ -72,13 +73,13 @@ def build_variables():
     return list(itertools.product(primeiro_nome, ultimo_sobrenome))
 
 def build_noise_train():
-    ruido = [2]
+    ruido = [1,2,3]
     abs_percent = [False]
     data_noise_per = [0,50,100]
     return list(itertools.product(ruido, abs_percent, data_noise_per))
 
 def build_noise_pred():
-    ruido = [2]
+    ruido = [1,2,3]
     abs_percent = [False]
     data_noise_per = [0,5,10]
     return list(itertools.product(ruido, abs_percent, data_noise_per))
@@ -100,7 +101,7 @@ def build_simulation():
                             {'field': 'primeiro_nome', 'type': variable[0], 'has missing': True},
                             {'field': 'abr', 'type':'ShortString'},
                             {'field': 'ult_sobrenome', 'type': variable[1]},
-        ]
+        ]        
         for idx_noise, noise_train_el in enumerate(noises_train):
                 noise_train_desc = f" Training (Add Noise Train): \n\t Noise Level: {noise_train_el[0]} \n\t Abs_Percent: {noise_train_el[1]} \n\t Noise on data: {noise_train_el[2]}%"
                 noise_train = (noise_train_el[0], noise_train_el[1], noise_train_el[2])
@@ -129,7 +130,7 @@ if __name__ == '__main__':
     for simulation in simulations:
         if simulation['training_id'] not in trained_d:
             print ('\n\033[93m###################################################################################')
-            print(simulation['simul_name'])
+            print(simulation['simul_name'])            
             print('New Training')
             print(simulation['training_descricao'])
             print(simulation['noise_train_desc'])
