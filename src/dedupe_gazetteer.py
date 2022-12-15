@@ -141,8 +141,6 @@ class TrainingProcess:
 
         messy_training_d = readData(ip_messy_training_file)
         print(f"Number of records from messy data for training (autorias): {len(messy_training_d)}")
-        if noisify:
-            messy_training_d = noisify.get_noisy_data(messy_training_d)
 
         messy_validation_d = readData(ip_messy_validation_file)
         labeled_pair_groups_list = getTrainingData(messy_d=messy_training_d, canonical_d=canonical_d,  sample_size=labeled_sample_size)
@@ -160,15 +158,19 @@ class TrainingProcess:
             print('=================================================================')
             print(f'Iteration: {i}')
             (labeled_messy_d, labeled_canonical_d) = labeled_pair_groups_list[i]
+            if noisify:
+                labeled_messy_d = noisify.get_noisy_data(labeled_messy_d)
+
             if i == 0:
                 trained_element.prepare_training(labeled_messy_d, labeled_canonical_d, sample_size=150000)
                 trained_element.model_training()
-                trained_element.write_training(self.op_training_file)
 
                 dc = getDiceCoefficient(gazetteer_obj=trained_element.gazetteer, canonical_d=canonical_d, validation_d=messy_validation_d)
                 trained_element.training_performance(dc)
                 print(f'[Validation] Dice Coefient: {trained_element}')
                 best_trained_element = copy.deepcopy(trained_element)
+                best_trained_element.write_training(self.op_training_file)
+                best_trained_element.write_settings(self.op_settings_file)
             else:
                 try:
                     trained_element = copy.deepcopy(self.training_element)
@@ -181,6 +183,7 @@ class TrainingProcess:
                         print(f'[Validation] Dice Coefient (new): {trained_element}')
                         best_trained_element = copy.deepcopy(trained_element)
                         best_trained_element.write_training(self.op_training_file)
+                        best_trained_element.write_settings(self.op_settings_file)
                     else:
                         stop = True
                         print(f'[Validation] Dice Coefient (best): {best_trained_element}')
@@ -194,9 +197,6 @@ class TrainingProcess:
             trained_element.cleanup_training()
             del trained_element
             i += 1
-
-        # Write a settings file containing the best data model and predicates.
-        best_trained_element.write_settings(self.op_settings_file)
 
         # Clean up data we used for training
         best_trained_element.cleanup_training()
