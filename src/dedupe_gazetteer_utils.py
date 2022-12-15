@@ -132,10 +132,15 @@ def getDiceCoefficient(gazetteer_obj, canonical_d, validation_d):
 
     messy_matches = collections.defaultdict(dict) # dicionario cujos valores sao dicionarios
     found_matches_s = set()
-    for messy_record_id, matches in results: # format of an item in results: (messy_record_id,((canon_record_id,score),...)
-        for canon_record_id, score in matches:
-            pair = (messy_record_id, canon_record_id)
-            found_matches_s.add(frozenset(pair))
+
+    try:
+        for messy_record_id, matches in results: # format of an item in results: (messy_record_id,((canon_record_id,score),...)
+            for canon_record_id, score in matches:
+                pair = (messy_record_id, canon_record_id)
+                found_matches_s.add(frozenset(pair))
+    except Exception as e:
+        print(e)
+        return -1
 
     del gazetteer
 
